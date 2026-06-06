@@ -1,0 +1,15 @@
+{
+  "Landing": {
+    "hero": "Find your direction",
+    "subhead": "Answer a few questions and discover how you fit as an Employee, Freelancer, or Founder.",
+    "cta": "Start the quiz",
+    "howItWorks": "How it works",
+    "langToggle": "עברית"
+  },
+  "Common": {
+    "appName": "Pathfinder",
+    "next": "Next",
+    "back": "Back",
+    "loading": "Analyzing your profile..."
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "pathfinder",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.107.0",
+    "next": "16.2.7",
+    "next-intl": "^4.13.0",
+    "posthog-js": "^1.381.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "resend": "^6.12.4"
+  },
+  "devDependencies": {
+    "@sparticuz/chromium": "^149.0.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vercel/config": "^0.5.1",
+    "@vitejs/plugin-react": "^6.0.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "puppeteer-core": "^25.1.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.1.8"
+  }
+}
