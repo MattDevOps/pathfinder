@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pathfinder v2 Brief — Follow-up &amp; New Decisions</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #5c5c5c;
+    --line: #e4e4e4;
+    --bg: #ffffff;
+    --accent: #2f5bd0;
+    --code-bg: #f4f5f7;
+    --iow-bg: #eef4ff;
+    --iow-border: #cfe0ff;
+    --blocking: #b32424;
+    --content: #8a6d00;
+    --gating: #7a1fa2;
+    --file: #0a6b6b;
+    --ok: #1a6b3c;
+    --ok-bg: #e8f6ee;
+    --ok-border: #bce6cd;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+  h1 {
+    font-size: 30px;
+    line-height: 1.2;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 16px;
+    margin: 0 0 28px;
+  }
+  .lede code { font-size: 0.9em; }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 36px 0;
+  }
+  h2 {
+    font-size: 21px;
+    margin: 40px 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .section-note {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 18px;
+  }
+  /* Callout boxes */
+  .conditions {
+    border: 1px solid var(--iow-border);
+    background: var(--iow-bg);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 4px 0 8px;
+  }
+  .conditions h2 { margin: 0 0 4px; font-size: 19px; }
+  .conditions p.intro { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+  .conditions ul { margin: 0; padding-left: 20px; }
+  .conditions li { margin: 7px 0; }
+  .conditions .close { margin: 12px 0 0; font-size: 14px; }
+  /* "Already settled" green box */
+  .settled {
+    border: 1px solid var(--ok-border);
+    background: var(--ok-bg);
+    border-radius: 12px;
+    padding: 18px 20px 14px;
+    margin: 4px 0 8px;
+  }
+  .settled h2 { margin: 0 0 4px; font-size: 19px; color: var(--ok); }
+  .settled p.intro { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+  .settled ul { margin: 0; padding-left: 22px; }
+  .settled li { margin: 8px 0; }
+  .settled li .obs { color: var(--muted); }
+  /* The single blocker box */
+  .blockerbox {
+    border: 1px solid #f0c9c9;
+    background: #fdeeee;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 4px 0 8px;
+  }
+  .blockerbox h2 { margin: 0 0 6px; font-size: 19px; color: var(--blocking); }
+  .blockerbox p { margin: 0 0 10px; }
+  .blockerbox ul { margin: 8px 0 0; padding-left: 20px; }
+  .blockerbox li { margin: 5px 0; }
+  ol.questions {
+    list-style: none;
+    counter-reset: q;
+    margin: 0;
+    padding: 0;
+  }
+  ol.questions > li {
+    counter-increment: q;
+    position: relative;
+    padding: 18px 0 18px 46px;
+    border-top: 1px solid var(--line);
+  }
+  ol.questions > li:first-child { border-top: 0; }
+  ol.questions > li::before {
+    content: counter(q);
+    position: absolute;
+    left: 0;
+    top: 18px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--code-bg);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .q-title { font-weight: 600; }
+  .sub { color: var(--muted); margin: 6px 0 0; }
+  .sub.proposal {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .iow {
+    background: var(--iow-bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 9px 12px;
+    margin: 10px 0 0;
+    font-size: 14.5px;
+  }
+  .iow b {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 5px;
+    margin-right: 6px;
+    vertical-align: 1px;
+    white-space: nowrap;
+  }
+  .tag.blocking { background: #fbe6e6; color: var(--blocking); }
+  .tag.content  { background: #fbf3d6; color: var(--content); }
+  .tag.gating   { background: #f3e3fb; color: var(--gating); }
+  .tag.file     { background: #d9f0f0; color: var(--file); }
+  .tag.scope    { background: #e6ecfb; color: var(--accent); }
+  code {
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font: 0.88em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0 4px;
+    font-size: 14px;
+  }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; }
+  thead th { background: var(--code-bg); }
+  tbody th { background: var(--code-bg); font-weight: 600; }
+  ul.bullets { margin: 8px 0 0; padding-left: 20px; }
+  ul.bullets li { margin: 3px 0; }
+  a { color: var(--accent); }
+  .legend { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  @media print {
+    body { font-size: 12px; }
+    .wrap { padding: 0; max-width: none; }
+    ol.questions > li { break-inside: avoid; }
+    .conditions, .settled, .blockerbox { break-inside: avoid; }
+    table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Pathfinder — Follow-up on the v2 Technical Brief</h1>
+  <p class="lede">
+    Rephael — your <em>Complete Technical Brief (v2)</em> reached me before I'd sent over my first
+    round of questions, which is good timing: v2 is a meaningfully different product from the spec
+    I first reviewed (a 3-phase funnel with a visual step, Archetype&nbsp;×&nbsp;Domain results,
+    LinkedIn sign-in, and a full paid coaching system). This note does three things — tells you what
+    v2 <strong>already settles</strong>, flags the <strong>one file I need to start</strong>, and lays
+    out the <strong>new decisions</strong> v2 creates. Every item has a plain-terms explanation.
+  </p>
+  <p class="legend">
+    <span class="tag blocking">Blocking</span> I can't build correctly until it's decided &nbsp;·&nbsp;
+    <span class="tag file">Need&nbsp;file</span> waiting on an asset from you &nbsp;·&nbsp;
+    <span class="tag scope">Scope</span> decides how much gets built &nbsp;·&nbsp;
+    <span class="tag content">Content</span> writing/data work on your side &nbsp;·&nbsp;
+    <span class="tag gating">Gating</span> picks the backend platform
+  </p>
+
+  <hr>
+
+  <div class="settled">
+    <h2>What v2 already settles (you can skip my first list on these)</h2>
+    <p class="intro">Several open questions from my earlier draft are now answered by the brief. Good — that's less back-and-forth:</p>
+    <ul>
+      <li><strong>Back button</strong> — v2 has "Back + Continue," so going back is allowed. <span class="obs">Matches what I'd recommended.</span></li>
+      <li><strong>Email storage</strong> — v2 says encrypt at rest (AES-256). <span class="obs">Exactly the approach I proposed; the "store hashed" worry is gone.</span></li>
+      <li><strong>Coach booking</strong> — Calendly embed, confirmed.</li>
+      <li><strong>Completion time</strong> — the promise is now "under 20 minutes" for the full 3-phase journey.</li>
+      <li><strong>The big writing gap</strong> — the career copy I was worried about now exists as the 192-path database inside the prototype. <span class="obs">(Pending I actually receive that file — see below.)</span></li>
+      <li><strong>The old results model is retired</strong> — Employee / Freelancer / Founder "scenarios," the 5-sector grid, and the freelancer-definition contradiction are all replaced by Archetype&nbsp;×&nbsp;Domain. So you can ignore questions 1, 3, 4, and 6 from my first list entirely.</li>
+      <li><strong>Analytics</strong> — you picked Microsoft Clarity; I'd suggested PostHog. Clarity is fine, noted. <span class="obs">(They do different things — Clarity shows heatmaps/recordings, PostHog counts funnel drop-off. We can run both free if you ever want the drop-off numbers too.)</span></li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <div class="blockerbox">
+    <h2>Before anything else: I need <code>pathfinder-v3.html</code></h2>
+    <p>Section 12 of your brief lists <code>pathfinder-v3.html</code> as the Day-1 hand-off — "the complete working prototype with all 3 phases + results, all question data, all 192 career paths," and it tells me to "extract the DB object starting at line ~600." <strong>That file was not attached.</strong> It's the single most important asset in the whole project: it's the exact UX I'm meant to rebuild, and it's the only place the 192 career paths and the visual-phase configuration actually live.</p>
+    <p>Until I have it, the results engine, the visual phase, and most of weeks 3-5 are blocked. Please send:</p>
+    <ul>
+      <li><strong><code>pathfinder-v3.html</code></strong> — the prototype itself (this is the critical one).</li>
+      <li><strong><code>Pathfinder_BusinessPlan_Israel_v2.docx</code></strong> — referenced for context; I don't have it.</li>
+      <li>Confirmation that <strong><code>Pathfinder_TechSpecs_Developer.docx</code></strong> is the same tech-specs doc I already have (it's the one with the 40 questions — which raises question&nbsp;2 below).</li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <h2>A. Reconciling v2 with what's already built</h2>
+  <p class="section-note">I've already built a tested core on the v1 spec. v2 changes part of it. I want to keep what survives and not rebuild blindly.</p>
+  <ol class="questions">
+    <li>
+      <div class="q-title"><span class="tag blocking">Blocking</span>27 questions, or 40?</div>
+      <p class="sub">The brief says Phase&nbsp;1 = 15 personality questions and Phase&nbsp;2 = 12 passion questions (27 total). But the same brief points me to the tech-specs doc "with all <strong>40</strong> quiz questions," and week&nbsp;8 says "all <strong>27</strong> questions translated." I've already built the 40-question version. These don't agree.</p>
+      <p class="sub proposal"><strong>Proposed default:</strong> the 15 + 12 model in v2 is the real one; the 40-question set was the older design and gets retired (I'll reuse any questions that map cleanly). The authoritative questions are whatever lives in <code>pathfinder-v3.html</code>. Confirm.</p>
+      <p class="iow"><b>In plain terms</b>Your new plan describes a 27-question quiz, but it also points me at an old document with 40 questions — and I'd already built the 40. I need to know which is real so I'm not maintaining two quizzes. My assumption: the new 27 wins, the 40 is history. Just confirm.</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag scope">Scope</span>What I keep vs. rebuild.</div>
+      <p class="sub">The good news: v2 keeps the <strong>same four dimensions</strong> (Thinking, Social, Energy, Risk) with the same low→high poles, so the engine's foundation survives. What changes is the question set, the <em>scoring math</em> (v2 uses 5 options including a "null," allows multi-select, and averages — versus the old single-pick 0-3), and the <em>output</em> (an Archetype + a Domain instead of a sector + scenarios).</p>
+      <p class="sub proposal"><strong>Plan:</strong> keep the four-dimension model, the Hebrew/English shell, the database, and the encryption approach; replace the questions, the scoring formula, and the results model. Confirm that's the intent and you're not also expecting the old single-quiz version to live on.</p>
+      <p class="iow"><b>In plain terms</b>A chunk of what I built still works and I'll reuse it — that saves you money. The parts that change, I'll rebuild to match v2. I just want a "yes, that's right" so we're agreed on what's being thrown away and what's being kept.</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>B. The visual phase (Phase 0)</h2>
+  <p class="section-note">New in v2. It's the headline differentiator, so it's worth getting two things straight.</p>
+  <ol class="questions" start="3" style="counter-reset: q 2;">
+    <li>
+      <div class="q-title"><span class="tag scope">Scope</span>Lüscher &amp; Psycho-Geometrics — credibility and rights.</div>
+      <p class="sub">Phase&nbsp;0 is built on the <strong>Lüscher Color Test</strong> and <strong>Psycho-Geometrics</strong> (Dellinger). Two flags: (a) both are <strong>trademarked, proprietary methods</strong> — we should use "inspired-by" colour/shape sets rather than the actual protected materials, to stay clear of licensing issues; and (b) the science behind both is <strong>contested</strong>, so if a user or journalist asks "is this real psychology?" we need an answer ready.</p>
+      <p class="sub proposal"><strong>Proposed default:</strong> implement it as our own "instinctive visual profiling" using inspired-by colours/shapes (not the trademarked palettes), and frame it in the UI as a fun, fast read of instinct — not a clinical diagnosis. Confirm you're comfortable with that framing.</p>
+      <p class="iow"><b>In plain terms</b>The colour/shape test you're using comes from named, trademarked systems, and academics argue about whether they actually work. I can absolutely build the experience — I just don't want to copy the protected materials or oversell it as hard science and have it bite us later. My suggestion is to do our own version and present it as "a quick read of your instincts," not a medical test. OK?</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag blocking">Blocking</span>Visual scoring numbers &amp; edge cases.</div>
+      <p class="sub">The visual step nudges the result with specific weights — colours up to ±15, shape +20, space +6, stimulus +3 — and those can <strong>flip a borderline archetype or domain</strong>. I need to know: are these calibrated, or placeholder values from the prototype? And what happens when someone picks fewer than 3 colours, picks the "no effect" grey, picks the neutral "Rectangle" shape, or skips Phase&nbsp;0 altogether?</p>
+      <p class="sub proposal"><strong>Proposed default:</strong> Phase&nbsp;0 is encouraged but optional; if skipped, the Archetype/Domain come from the text quizzes alone. I'll treat the weights as the prototype's values until we have real data to tune them. Confirm.</p>
+      <p class="iow"><b>In plain terms</b>The colours and shapes don't just decorate — they actually move the final answer, sometimes enough to change it. I need to know whether those amounts are deliberate or just first-draft guesses, and what the result should be if someone rushes or skips that part. My default keeps things working even if they skip it.</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>C. Money &amp; coaches — where's the MVP line?</h2>
+  <p class="section-note">This is the biggest scope question in the brief.</p>
+  <ol class="questions" start="5" style="counter-reset: q 4;">
+    <li>
+      <div class="q-title"><span class="tag scope">Scope</span>What of the paid system ships in the 12 weeks?</div>
+      <p class="sub">Your week-by-week plan (weeks 1-12) builds the quiz, results, PDF, LinkedIn, Hebrew, email, and admin — and stops there. But Section&nbsp;13 specifies an entire paid business on top: three tiers, Stripe <em>plus</em> Stripe Connect coach payouts, coach dashboards, an introductions database, and an 8-week curriculum. <strong>That's a second product's worth of work and it isn't in the 12-week schedule.</strong> I need the cut line.</p>
+      <p class="sub proposal"><strong>Proposed MVP (matches your own "for MVP" notes in 13.7):</strong> the results page shows the three tier cards; <strong>Tier&nbsp;1 (Action Plan PDF)</strong> gets live Stripe checkout + automatic PDF delivery; <strong>Tiers&nbsp;2 &amp;&nbsp;3</strong> are a "book a discovery call" button (Calendly) with payment taken manually. Everything else — coach dashboard, automatic payouts, automated introductions, curriculum delivery — is V2. Confirm, or tell me what moves earlier.</p>
+      <p class="iow"><b>In plain terms</b>The free quiz and the paid coaching are really two products. Your timeline only has room for the first one plus a simple "buy the PDF" and "book a call" button. The full coach system — dashboards, automatic payments to coaches, the introductions engine — is a lot more and should come after we know people will pay. I want your blessing on that split before I plan the work.</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag scope">Scope</span>Stripe specifics — entity, currencies, payouts.</div>
+      <p class="sub">Live payments need a few decisions: who is the legal <strong>merchant / company entity</strong> taking the money; multi-currency (₪ / € / $) brings <strong>VAT and Israeli tax/invoicing</strong> obligations; and "coaches get 60-65% via Stripe Connect" means coaches must be onboarded as connected payout accounts.</p>
+      <p class="sub proposal"><strong>Proposed for MVP:</strong> all payments land in one account (yours), invoices/VAT handled by your accountant, and coaches are paid <strong>manually</strong> at first — Stripe Connect comes with the V2 coach system. Confirm.</p>
+      <p class="iow"><b>In plain terms</b>Taking real money brings tax and legal-entity questions that are yours, not mine. For the first version I'd keep it simple: money comes to you, you pay coaches by hand, and we automate the coach payouts later. Confirm that's fine and tell me whose company is the one charging cards.</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>D. Markets &amp; language — what ships first?</h2>
+  <p class="section-note">The brief points at three markets at once. I can only author content in the languages we decide on.</p>
+  <ol class="questions" start="7" style="counter-reset: q 6;">
+    <li>
+      <div class="q-title"><span class="tag blocking">Blocking</span>Primary launch market &amp; language.</div>
+      <p class="sub">The signals conflict: the prototype is written in <strong>Italian</strong>, the database defaults language to <strong>Hebrew</strong>, the revenue model is in <strong>₪</strong>, and the business plan is titled <strong>Israel</strong>. So which market and language do we launch the beta in, and is English in scope for v1 at all? My current shell is English + Hebrew.</p>
+      <p class="sub proposal"><strong>Proposed default:</strong> pick <strong>one</strong> primary language for the beta (I'd guess Hebrew, given the business plan and ₪ pricing), prove the funnel, then add the others as toggles. Tell me the one to lead with.</p>
+      <p class="iow"><b>In plain terms</b>Your materials are a mix of Italian, Hebrew, and English, and I can't tell which country we're actually launching in first. That matters a lot, because every question and all 192 career write-ups have to exist in whatever language we launch. Pick the one market to start with and we move faster; we add the others once it's working.</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag content">Content</span>Who localizes everything, and by when?</div>
+      <p class="sub">Whatever languages we ship, someone has to translate: the 27 questions, the <strong>192 career paths</strong> (4 fields each), the visual-phase labels, and the tier copy. The prototype gives us one language; the rest is real translation work — and the Hebrew needs to be <strong>gender-neutral and natural</strong>, not a literal word-for-word job (same note as before — the sample Hebrew used masculine phrasing).</p>
+      <p class="iow"><b>In plain terms</b>This is the writing bottleneck again, just bigger now because there are 192 career descriptions. I build the pages; a human has to write the words in each language. Who's doing that, and when can I have it? The results page can't go live without it.</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>E. Tech &amp; data</h2>
+  <p class="section-note">Two places where I'd diverge from the brief, plus the one carried-over gating question.</p>
+  <ol class="questions" start="9" style="counter-reset: q 8;">
+    <li>
+      <div class="q-title"><span class="tag scope">Scope</span>One app, not two hosts.</div>
+      <p class="sub">Your architecture diagram puts a separate Node/Express backend on "Railway or Render," with the React frontend on Vercel — but your own stack table lists Vercel + Supabase. Splitting the front and back ends across two hosts adds latency, cost, and operational complexity for no MVP benefit.</p>
+      <p class="sub proposal"><strong>Recommended:</strong> build it as <strong>one Next.js app on Vercel</strong> (the scoring runs server-side inside it) talking to Supabase — fewer moving parts, same capabilities, cheaper. OK to keep it unified?</p>
+      <p class="iow"><b>In plain terms</b>The plan describes two separate servers; I can do the same job with one, which is simpler, faster, and costs less to run. Nothing you care about changes. I just want a thumbs-up to use the simpler setup.</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag gating">Gating</span>Data residency — now across markets.</div>
+      <p class="sub">Carried over from my first list, and bigger now that Israel + Italy + "global" are all in play. Where must user data legally live? <strong>EU / Frankfurt</strong> covers GDPR <em>and</em> Israeli law for almost every case (my default — fast, cheap). "Must physically be inside Israel" means AWS Tel&nbsp;Aviv from day one (slower, pricier). The added Italy/EU market actually makes Frankfurt the stronger choice.</p>
+      <p class="sub proposal"><strong>Default:</strong> EU/Frankfurt unless a lawyer or enterprise client tells you otherwise. Confirm.</p>
+      <p class="iow"><b>In plain terms</b>Same key question as before: which country is the data allowed to sit in? Europe (Frankfurt) is easy and legal for both Israel and Italy. "It must be inside Israel" is doable but slower and costlier from day one — and changing it later is a rebuild, so decide it now.</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag blocking">Blocking</span>LinkedIn — what it's actually for.</div>
+      <p class="sub">Two things. (a) <em>Technical, just flagging:</em> the API calls in the brief (<code>/v2/me</code>, <code>/v2/emailAddress</code>) are LinkedIn's older endpoints; with the <code>openid profile email</code> scopes you listed, the current path is the OpenID <code>userinfo</code> endpoint, so my code won't match the doc word-for-word — that's expected. (b) <em>Needs a decision:</em> "re-run the algorithm with LinkedIn data" is underspecified — how should a job title or years of experience actually change someone's scores?</p>
+      <p class="sub proposal"><strong>Proposed for MVP:</strong> use LinkedIn only to pre-fill name/email and to show a "this confirms / challenges your result" note — <strong>not</strong> to silently change the archetype behind the user's back. We can make it influence scores later once we trust the rules. Confirm.</p>
+      <p class="iow"><b>In plain terms</b>Connecting LinkedIn is great for skipping typing and for a nice "your real job matches your result" touch. But the brief also says LinkedIn should secretly change the quiz answer, and it doesn't say how. I'd rather it inform the result visibly than override it invisibly — quietly changing someone's result based on their job title can feel wrong. Agree?</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>F. Still open from before</h2>
+  <p class="section-note">Two legal items v2 doesn't resolve — they don't block the build, but they block launch.</p>
+  <ol class="questions" start="12" style="counter-reset: q 11;">
+    <li>
+      <div class="q-title">Privacy policy + consent text.</div>
+      <p class="sub">Still needed before launch, and now larger: it must cover GDPR <strong>and</strong> Israeli Privacy Protection Law, plus LinkedIn data handling and the deletion endpoint your brief specifies — in whichever launch languages we choose. Who provides the legal wording?</p>
+      <p class="iow"><b>In plain terms</b>We legally need a privacy policy and an "I agree" checkbox before going live, and it has to cover Israel, Europe, and the LinkedIn data. Who writes that text — you, your lawyer, or do we start from a template?</p>
+    </li>
+    <li>
+      <div class="q-title">Marketing use of contact data.</div>
+      <p class="sub">Can captured emails / LinkedIn contacts be used for coach follow-up and marketing, or for results delivery only? This sets the wording of the consent checkbox.</p>
+      <p class="iow"><b>In plain terms</b>Are you allowed to email these people later to sell coaching, or only to send their results? Your answer decides what the consent checkbox has to say.</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <p class="lede" style="margin-bottom:0">
+    Quick recap of what would unblock me fastest, in order: <strong>(1)</strong> send <code>pathfinder-v3.html</code>;
+    <strong>(2)</strong> confirm 27-vs-40 questions and the keep/rebuild plan (A1-A2);
+    <strong>(3)</strong> pick the launch language (D7); <strong>(4)</strong> confirm the paid-system MVP line (C5).
+    Everything else can follow. Happy to hop on a call and walk through any of these.
+  </p>
+
+</div>
+</body>
+</html>
