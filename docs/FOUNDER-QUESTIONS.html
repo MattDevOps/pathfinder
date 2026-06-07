@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pathfinder — Decisions Needed From the Founder</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #5c5c5c;
+    --line: #e4e4e4;
+    --bg: #ffffff;
+    --accent: #2f5bd0;
+    --code-bg: #f4f5f7;
+    --iow-bg: #eef4ff;
+    --iow-border: #cfe0ff;
+    --blocking: #b32424;
+    --content: #8a6d00;
+    --gating: #7a1fa2;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+  h1 {
+    font-size: 30px;
+    line-height: 1.2;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 16px;
+    margin: 0 0 28px;
+  }
+  .lede code { font-size: 0.9em; }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 36px 0;
+  }
+  h2 {
+    font-size: 21px;
+    margin: 40px 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .section-note {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 18px;
+  }
+  /* Conditions / how it affects time & cost callout */
+  .conditions {
+    border: 1px solid var(--iow-border);
+    background: var(--iow-bg);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 4px 0 8px;
+  }
+  .conditions h2 {
+    margin: 0 0 4px;
+    font-size: 19px;
+  }
+  .conditions p.intro { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+  .conditions ul { margin: 0; padding-left: 20px; }
+  .conditions li { margin: 7px 0; }
+  .conditions .close { margin: 12px 0 0; font-size: 14px; }
+  ol.questions {
+    list-style: none;
+    counter-reset: q;
+    margin: 0;
+    padding: 0;
+  }
+  ol.questions > li {
+    counter-increment: q;
+    position: relative;
+    padding: 18px 0 18px 46px;
+    border-top: 1px solid var(--line);
+  }
+  ol.questions > li:first-child { border-top: 0; }
+  ol.questions > li::before {
+    content: counter(q);
+    position: absolute;
+    left: 0;
+    top: 18px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--code-bg);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .q-title { font-weight: 600; }
+  .sub {
+    color: var(--muted);
+    margin: 6px 0 0;
+  }
+  .sub.proposal {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  /* "In plain terms" — for the non-technical reader */
+  .iow {
+    background: var(--iow-bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 9px 12px;
+    margin: 10px 0 0;
+    font-size: 14.5px;
+  }
+  .iow b {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 5px;
+    margin-right: 6px;
+    vertical-align: 1px;
+    white-space: nowrap;
+  }
+  .tag.blocking { background: #fbe6e6; color: var(--blocking); }
+  .tag.content  { background: #fbf3d6; color: var(--content); }
+  .tag.gating   { background: #f3e3fb; color: var(--gating); }
+  code {
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font: 0.88em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0 4px;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--line);
+    padding: 7px 10px;
+    text-align: left;
+  }
+  thead th { background: var(--code-bg); }
+  tbody th { background: var(--code-bg); font-weight: 600; }
+  ul.bullets { margin: 8px 0 0; padding-left: 20px; }
+  ul.bullets li { margin: 3px 0; }
+  a { color: var(--accent); }
+  .legend {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  @media print {
+    body { font-size: 12px; }
+    .wrap { padding: 0; max-width: none; }
+    ol.questions > li { break-inside: avoid; }
+    .conditions { break-inside: avoid; }
+    table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Pathfinder — Decisions Needed From the Founder</h1>
+  <p class="lede">
+    The spec (<code>docs/spec-extracted.md</code>) is strong, but the results engine
+    cannot be built until these are answered. Grouped by urgency.
+  </p>
+  <p class="legend">
+    <span class="tag blocking">Code-blocking</span> stops the algorithm/results work &nbsp;·&nbsp;
+    <span class="tag content">Content</span> writing work that runs in parallel but must land by ~week 5-6 &nbsp;·&nbsp;
+    <span class="tag gating">Gating</span> decides the backend platform
+  </p>
+
+  <hr>
+
+  <div class="conditions">
+    <h2>How these questions affect time &amp; cost</h2>
+    <p class="intro">Short version: these aren't paperwork — they <em>are</em> the schedule. A few of them have to be answered before I can write a single line of the results engine, and a couple decide how much gets built (or rebuilt).</p>
+    <ul>
+      <li><strong>The build is about 5-6 weeks of my time</strong> — but that clock only starts on the results engine once the "code-blocking" items below are decided. Every week they stay open is a week the main work can't move.</li>
+      <li><strong>One question (data residency, #13) picks the entire backend.</strong> "Europe is fine" = I start now. "Must be inside Israel" = a different, slower setup. Deciding it late means rebuilding, not adjusting.</li>
+      <li><strong>The writing (Section B) is on your side, not mine.</strong> ~30 blocks of result copy + natural Hebrew. The results page can't ship without it. If it lands by ~week 5 we stay on track; if it's late, the build waits on it.</li>
+      <li><strong>Answers are cheap, reversals are expensive.</strong> A decision made now is a setting I type in. The same decision made after I've built around the default is paid rework.</li>
+    </ul>
+    <p class="close">My estimate and price assume: the code-blocking answers come back in week 1, residency is decided up front, and content arrives by week 5. If those slip, the timeline slips with them, and big mid-project changes get quoted separately.</p>
+  </div>
+
+  <hr>
+
+  <h2>A. Scoring &amp; scenario logic</h2>
+  <p class="section-note">Blocks weeks 5-7.</p>
+  <ol class="questions">
+    <li>
+      <div class="q-title"><span class="tag blocking">Code-blocking</span>Freelancer definition.</div>
+      <p class="sub">The spec's code sets freelancer strength on <code>dim2 &lt; 50</code> but the comment says "High DIM_2 (independent)" — yet Section 2.1 defines <strong>high DIM_2 = Collaborative</strong> (low = Independent). These contradict. What <em>is</em> a Pathfinder freelancer?</p>
+      <p class="sub proposal"><strong>Proposed default:</strong> independent (low DIM_2) + moderate risk (mid DIM_4) + creative (high DIM_3). Confirm or correct.</p>
+      <p class="iow"><b>In plain terms</b>When the quiz tells someone "you'd thrive as a freelancer," what kind of person do we mean? The original spec contradicts itself. Just give me your gut answer — what does a Pathfinder freelancer look like? — and I'll make the math match it.</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag blocking">Code-blocking</span>Band thresholds.</div>
+      <p class="sub">Confirm we use the same bands everywhere: <strong>0-33 = Low, 34-66 = Mid, 67-100 = High</strong>. (The spec mixes this with a stray <code>dim2 &lt; 50</code> — we'd drop that.)</p>
+      <p class="iow"><b>In plain terms</b>Every score gets sorted into Low / Medium / High. I want to use the same cut-off points everywhere. Just say "yes, that's fine."</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag blocking">Code-blocking</span>Sector map for all 9 combinations.</div>
+      <p class="sub">The table in 3.4 only defines 5 of the 9 DIM_1 × DIM_3 combinations. Approve this full map (or edit):</p>
+      <table>
+        <thead>
+          <tr><th>DIM_1 \ DIM_3</th><th>Low</th><th>Mid</th><th>High</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>Low</th><td>Operations &amp; Engineering</td><td>Operations &amp; Engineering</td><td>Craft &amp; Production</td></tr>
+          <tr><th>Mid</th><td>Strategy &amp; Analysis</td><td>People &amp; Communication</td><td>Innovation &amp; Creativity</td></tr>
+          <tr><th>High</th><td>Strategy &amp; Analysis</td><td>Strategy &amp; Analysis</td><td>Innovation &amp; Creativity</td></tr>
+        </tbody>
+      </table>
+      <p class="iow"><b>In plain terms</b>The quiz sorts each person into one of five career "worlds." The spec only said which world to use for 5 of the 9 possible score combinations — it left 4 blank. The grid above is my best guess for filling the gaps. Glance at it and tell me if any box looks wrong; if it all looks reasonable, just approve it.</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag blocking">Code-blocking</span>Profile title rule.</div>
+      <p class="sub">The header ("The Creative Strategist") and <code>profile_title</code> column are never defined. Pick one approach:</p>
+      <ul class="bullets">
+        <li><strong>(a)</strong> One fixed title per sector cluster (5 titles total), or</li>
+        <li><strong>(b)</strong> Generated as "The {DIM_1 adjective} {DIM_3 noun}" from a small word table.</li>
+      </ul>
+      <p class="sub">Either way we need the actual words, in EN <strong>and</strong> HE.</p>
+      <p class="iow"><b>In plain terms</b>Each person gets a flattering label at the top of their result, like "The Creative Strategist." Two ways to do it: (a) one fixed title for each of the five worlds — simple, just 5 titles — or (b) mix-and-match words to make more variety. Pick one, and either way send me the actual words you want, in English and Hebrew.</p>
+    </li>
+    <li>
+      <div class="q-title">Tie-break / flat profile.</div>
+      <p class="sub">What should an all-50s ("balanced everything") user see? Default proposal: route to People &amp; Communication cluster with a "Versatile" title. Confirm.</p>
+      <p class="iow"><b>In plain terms</b>If someone scores perfectly average on everything, what result should they get? My default is to call them "Versatile" and put them in the People &amp; Communication world. OK, or would you rather something else?</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>B. Scenario content</h2>
+  <p class="section-note">The hidden critical path — <span class="tag content">Content</span>, needed by ~wk 5-6.</p>
+  <ol class="questions" start="6" style="counter-reset: q 5;">
+    <li>
+      <div class="q-title">Authored scenario copy.</div>
+      <p class="sub">For <strong>each sector cluster × each scenario (Employee / Freelancer / Founder)</strong> we need authored copy:</p>
+      <ul class="bullets">
+        <li>a <strong>headline</strong>, <strong>3 recommended roles</strong>, a <strong>motivation paragraph</strong>, <strong>3 next steps</strong> — in <strong>EN and HE</strong>.</li>
+        <li>That's roughly <strong>5 clusters × 3 scenarios = 15 blocks × 2 languages = ~30 content units.</strong></li>
+      </ul>
+      <p class="sub">The spec only gives Employee roles + Founder ideas for 5 clusters, and no Freelancer roles, no paragraphs, no next-steps, no Hebrew. <strong>Who writes this, and by when?</strong> This gates the entire results page.</p>
+      <p class="iow"><b>In plain terms</b>This is the big one. For every result, someone has to actually <em>write</em> the advice the person reads — a headline, three suggested jobs, an encouraging paragraph, and three next steps. There are about 30 of these to write, in both English and Hebrew. I build the page that displays them, but I can't invent the words. <strong>Who's writing this, and when can I have it?</strong> Nothing downstream works without it.</p>
+    </li>
+    <li>
+      <div class="q-title">Hebrew quality.</div>
+      <p class="sub">The example question's Hebrew uses masculine phrasing (<code>כשאתה</code>). Do you want <strong>gender-neutral</strong> Hebrew throughout, and will a native copywriter localize (not literally translate) all 40 questions + all result content?</p>
+      <p class="iow"><b>In plain terms</b>The sample Hebrew is written as if speaking only to men. Do you want the Hebrew to speak to everyone? And will a real Hebrew writer phrase it naturally (not a robotic word-for-word translation) for all 40 questions and the results?</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>C. Product / funnel</h2>
+  <p class="section-note">We recommend changing the spec — confirm.</p>
+  <ol class="questions" start="8" style="counter-reset: q 7;">
+    <li>
+      <div class="q-title">Email gate placement.</div>
+      <p class="sub">Spec puts it <em>before</em> the quiz. We strongly recommend moving it to <em>after</em> completion (capture email to unlock/save the full report, with a teaser shown first). This typically lifts completion substantially. <strong>OK to move it?</strong></p>
+      <p class="iow"><b>In plain terms</b>Right now the spec asks for the person's email <em>before</em> they take the quiz. People hate giving their email before they get anything, so a lot of them quit. I want to ask <em>after</em> they finish — show a teaser of their result, then "enter your email to unlock the full report." More people will finish. OK to switch it?</p>
+    </li>
+    <li>
+      <div class="q-title">No back button.</div>
+      <p class="sub">Spec forbids going back. We recommend allowing <strong>back-one</strong> with a brief confirm/undo (one mis-tap across 40 questions is currently unrecoverable). Keep the fast feel, remove the trap. <strong>OK?</strong></p>
+      <p class="iow"><b>In plain terms</b>The spec says people can't go back to a previous question. But one accidental tap out of 40 with no way to fix it makes people rage-quit. I want to let them undo the last answer. Still fast, just not a trap. OK?</p>
+    </li>
+    <li>
+      <div class="q-title">"12 minutes" vs "under 15 minutes."</div>
+      <p class="sub">The hero headline and the Definition-of-Done disagree. Which is the real promise? (We'll measure actual median completion time once instrumented.)</p>
+      <p class="iow"><b>In plain terms</b>The spec promises "12 minutes" in one place and "under 15 minutes" in another. Which number do we put in front of users? (Once it's live I can measure how long it actually takes.)</p>
+    </li>
+    <li>
+      <div class="q-title">Coach booking.</div>
+      <p class="sub">MVP links to Calendly. Confirm the Calendly URL / that this is the intended booking path for beta.</p>
+      <p class="iow"><b>In plain terms</b>When someone wants to book a coaching session, we'll send them to a Calendly booking page. Is Calendly the right tool, and what's the link?</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>D. Privacy &amp; legal</h2>
+  <p class="section-note">Blocks launch, not build.</p>
+  <ol class="questions" start="12" style="counter-reset: q 11;">
+    <li>
+      <div class="q-title">Email handling.</div>
+      <p class="sub">Spec says "store hashed." That makes emailing the PDF and showing emails in the admin panel impossible. We'll instead <strong>encrypt</strong> the email at rest (recoverable) + add a lookup index. Confirm that's acceptable.</p>
+      <p class="iow"><b>In plain terms</b>The spec's way of storing emails would scramble them so badly we could never read them again — but we need to read them to email people their PDF and show them in your admin panel. My way keeps them locked and secure but still usable. That's standard and safe. OK to do it my way?</p>
+    </li>
+    <li>
+      <div class="q-title"><span class="tag gating">Gating</span>Data residency.</div>
+      <p class="sub">This decides our entire backend platform. Most managed hosts (Supabase/Vercel/Neon) have <strong>no Israel region</strong> — best is EU/Frankfurt. AWS <em>does</em> have a Tel Aviv region (<code>il-central-1</code>).</p>
+      <ul class="bullets">
+        <li>If <strong>EU/Frankfurt is acceptable</strong> (true for most GDPR/Israeli-law cases) → we use <strong>Supabase</strong> (fast to ship). <strong>This is our default until you say otherwise.</strong></li>
+        <li>If data <strong>must physically live in Israel</strong> (hard legal/enterprise requirement) → we switch to <strong>AWS RDS Postgres in Tel Aviv</strong> from day 1 (more setup, slower MVP).</li>
+      </ul>
+      <p class="sub"><strong>Which is it?</strong></p>
+      <p class="iow"><b>In plain terms</b>This is the most important question for the price and timeline. Where is the user data legally allowed to be stored? <strong>Europe (Frankfurt)</strong> is easy, cheap, and fast — and fine for almost every legal case. <strong>"It must physically be inside Israel"</strong> is possible but means a slower, more expensive setup from day one. Most projects are fine with Europe — but if a lawyer or a big client told you it has to be Israel, tell me now, because changing it later is a rebuild.</p>
+    </li>
+    <li>
+      <div class="q-title">Privacy policy + consent.</div>
+      <p class="sub">We need a real privacy policy (controller identity, purpose, retention, deletion process) and a consent checkbox before launch. Who provides the legal text?</p>
+      <p class="iow"><b>In plain terms</b>Before launch we legally need a privacy policy and a little "I agree" checkbox. Who writes the legal wording — you, your lawyer, or should we find a template? I'll wire it in once the text exists.</p>
+    </li>
+    <li>
+      <div class="q-title">Marketing use of emails.</div>
+      <p class="sub">Can captured emails be used for coach follow-up / marketing, or results-delivery only? (Determines the consent wording.)</p>
+      <p class="iow"><b>In plain terms</b>Are you allowed to email these people later for marketing or coach follow-ups, or only to send them their results? Your answer changes what the consent checkbox has to say.</p>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>E. Scope confirmations</h2>
+  <ol class="questions" start="16" style="counter-reset: q 15;">
+    <li>
+      <div class="q-title">Retakes.</div>
+      <p class="sub">Can a user take the quiz more than once with the same email? (Affects the data model — we'd treat email as identity and append new sessions.)</p>
+      <p class="iow"><b>In plain terms</b>Can the same person take the quiz again with the same email and get a fresh result? Yes or no changes how I store the data.</p>
+    </li>
+    <li>
+      <div class="q-title">Analytics.</div>
+      <p class="sub">We're adding PostHog (free) from week 1 to measure the funnel. Any objection to a privacy-respecting analytics tool?</p>
+      <p class="iow"><b>In plain terms</b>I want to add a free tool that counts how many people start and finish the quiz (just numbers, not spying on individuals) so we can see what's working. Any objection?</p>
+    </li>
+  </ol>
+
+</div>
+</body>
+</html>
