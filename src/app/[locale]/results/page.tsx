@@ -35,6 +35,7 @@ export default async function ResultsPage({
     dim3: clamp(sp.d3, SAMPLE.dim3),
     dim4: clamp(sp.d4, SAMPLE.dim4),
   };
+  const q = `d1=${scores.dim1}&d2=${scores.dim2}&d3=${scores.dim3}&d4=${scores.dim4}`;
 
   return (
     <ResultsView
@@ -42,6 +43,7 @@ export default async function ResultsPage({
       locale={locale as Locale}
       toggleHref="/results"
       source="preview"
+      pdfHref={`/${locale}/results/pdf?${q}`}
     />
   );
 }

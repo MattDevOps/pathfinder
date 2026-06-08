@@ -65,8 +65,8 @@
     "cta": {
       "pdf": "Download as PDF",
       "share": "Share your result",
+      "copied": "Link copied",
       "email": "Email me my full profile"
-    },
-    "ctaNote": "PDF, share link and email unlock once the backend is wired."
+    }
   }
 }

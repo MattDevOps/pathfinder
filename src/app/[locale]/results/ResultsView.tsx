@@ -4,6 +4,7 @@ import type { Locale } from '@/i18n/routing';
 import type { DimensionScores } from '@/lib/types';
 import { buildProfile, type ScenarioView } from '@/lib/profile';
 import TrackEvent from '../TrackEvent';
+import ShareButton from './ShareButton';
 import { EVENTS } from '@/lib/analytics';
 
 // Presentational results profile, shared by the query-param preview page
@@ -18,11 +19,13 @@ export default async function ResultsView({
   locale,
   toggleHref,
   source,
+  pdfHref,
 }: {
   scores: DimensionScores;
   locale: Locale;
   toggleHref: string;
   source: 'preview' | 'shared';
+  pdfHref: string;
 }) {
   const profile = buildProfile(scores, locale);
   const t = await getTranslations({ locale, namespace: 'Results' });
@@ -101,17 +104,18 @@ export default async function ResultsView({
 
       <section className="flex flex-col items-stretch gap-3 border-t border-foreground/10 pt-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <button disabled className="rounded-full bg-foreground px-6 py-2.5 font-medium text-background opacity-50">
+          {/* Real download: hits the PDF route handler, so a plain anchor (not
+              client nav) and it opens/saves the generated PDF. */}
+          <a
+            href={pdfHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full bg-foreground px-6 py-2.5 text-center font-medium text-background transition hover:opacity-90"
+          >
             {t('cta.pdf')}
-          </button>
-          <button disabled className="rounded-full border border-foreground/20 px-6 py-2.5 font-medium opacity-50">
-            {t('cta.share')}
-          </button>
-          <button disabled className="rounded-full border border-foreground/20 px-6 py-2.5 font-medium opacity-50">
-            {t('cta.email')}
-          </button>
+          </a>
+          <ShareButton label={t('cta.share')} copiedLabel={t('cta.copied')} />
         </div>
-        <p className="text-center text-xs text-foreground/50">{t('ctaNote')}</p>
       </section>
     </main>
   );

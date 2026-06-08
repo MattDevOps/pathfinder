@@ -54,6 +54,7 @@ export default async function SharedResultPage({
       locale={locale as Locale}
       toggleHref={`/results/${token}`}
       source="shared"
+      pdfHref={`/${locale}/results/${token}/pdf`}
     />
   );
 }
