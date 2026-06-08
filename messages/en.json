@@ -11,5 +11,63 @@
     "next": "Next",
     "back": "Back",
     "loading": "Analyzing your profile..."
+  },
+  "Quiz": {
+    "progress": "Question {current} of {total}",
+    "selectHint": "Pick the option that fits you best. Use keys 1-4 or click.",
+    "back": "Back",
+    "restart": "Start over",
+    "submit": "See my result",
+    "preparing": "Preparing your quiz..."
+  },
+  "Gate": {
+    "lead": "Your profile is ready",
+    "teaser": "You came out as {title}. Enter your email to unlock your full profile and three career paths.",
+    "nameLabel": "First name (optional)",
+    "namePlaceholder": "Your name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "consent": "I agree to receive my results by email and accept the privacy policy.",
+    "privacyLink": "Privacy policy",
+    "submit": "Unlock my full profile",
+    "submitting": "Saving...",
+    "preview": "Just show me a preview (don't save)",
+    "errorInvalidEmail": "Please enter a valid email address.",
+    "errorConsent": "Please accept the privacy policy to continue.",
+    "errorIncomplete": "Some answers are missing. Please retake the quiz.",
+    "errorRateLimited": "Too many attempts. Please wait a little while and try again.",
+    "errorServer": "Something went wrong saving your profile. Please try again."
+  },
+  "Results": {
+    "draftBanner": "Draft preview: scoring and scenario content are provisional, pending sign-off.",
+    "profileLead": "Your profile",
+    "sectorLabel": "Sector",
+    "dimensionsHeading": "How you're wired",
+    "scenariosHeading": "Your three paths",
+    "rolesLabel": "Example roles",
+    "nextStepsLabel": "Next steps",
+    "translationPending": "Translation pending",
+    "strength": {
+      "high": "Strong fit",
+      "medium": "Possible fit",
+      "low": "Stretch"
+    },
+    "scenario": {
+      "employee": "Employee",
+      "freelancer": "Freelancer",
+      "founder": "Founder"
+    },
+    "dimension": {
+      "DIM_1": "Thinking style",
+      "DIM_2": "Work style",
+      "DIM_3": "Creative drive",
+      "DIM_4": "Risk appetite"
+    },
+    "cta": {
+      "pdf": "Download as PDF",
+      "share": "Share your result",
+      "copied": "Link copied",
+      "email": "Email me my full profile"
+    }
   }
 }

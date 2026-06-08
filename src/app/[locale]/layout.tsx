@@ -4,6 +4,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { Rubik } from 'next/font/google';
 import { routing, dir } from '@/i18n/routing';
+import Providers from '../providers';
 import '../globals.css';
 
 // Rubik covers both Latin and Hebrew, so one font renders EN and HE
@@ -44,7 +45,9 @@ export default async function LocaleLayout({
       className={`${rubik.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

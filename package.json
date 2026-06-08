@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -21,6 +22,7 @@
     "resend": "^6.12.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.1",
     "@sparticuz/chromium": "^149.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
