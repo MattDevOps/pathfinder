@@ -44,10 +44,12 @@ jobs:
 
       - run: npm ci
 
-      # Only Chromium is configured in playwright.config.ts. --with-deps pulls
-      # the OS libraries the headless browser needs on the runner.
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      # Cross-browser matrix (chromium, firefox, webkit, + iPhone/WebKit smoke).
+      # --with-deps pulls the OS libraries each engine needs on the runner;
+      # WebKit in particular needs libs the dev host (Fedora) lacks, so CI is
+      # the source of truth for the webkit + mobile-safari projects.
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
 
       # Runs landing -> quiz -> gate -> results + both PDF routes against a
       # `next dev` server (started by playwright.config webServer). No Supabase

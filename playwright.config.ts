@@ -25,11 +25,35 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
 
-  // First cut: Chromium only, to keep CI fast and green. The PLAN calls for a
-  // Firefox + WebKit + real-device matrix — add projects here once the funnel
-  // is stable (one extra block per browser via devices['Desktop Firefox'] etc).
+  // Cross-browser matrix (PLAN.md QA section: Chromium + Firefox + WebKit, plus
+  // an iOS Safari smoke).
+  //
+  // Test split, to avoid wasteful re-runs:
+  //   * chromium runs the full suite, including pdf.spec. The PDF route is
+  //     engine-independent (it hits an HTTP endpoint that renders via a
+  //     server-side Chromium), so there's no value in triplicating it across
+  //     Firefox/WebKit — they testIgnore it.
+  //   * Mobile Safari runs only the funnel happy-path as a smoke: this is the
+  //     closest CI proxy for the spec's real-device iOS Safari requirement
+  //     (true device testing still needs a manual pass). It exercises the
+  //     40-question quiz + gate + results under a phone viewport on WebKit.
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+      testIgnore: '**/pdf.spec.ts',
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+      testIgnore: '**/pdf.spec.ts',
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 13'] },
+      testMatch: '**/funnel.spec.ts',
+    },
   ],
 
   webServer: {
