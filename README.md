@@ -14,10 +14,11 @@ server-side persistence path (`completeSession` action -> atomic
 `/results/[token]` (read via the `get_shared_result` SECURITY DEFINER function).
 
 **The scenario/sector/profile-title logic and all scenario content are DRAFT
-pending founder sign-off** — see `docs/FOUNDER-QUESTIONS.md`. The DB write path
-is code-complete but **needs a Supabase project + secrets to run** (see
-"Backend / Supabase" below); it has not been exercised against a live database
-yet.
+pending founder sign-off** — see `docs/FOUNDER-QUESTIONS.md`. The DB **SQL** (schema,
+`complete_session`, `get_shared_result`, RLS) is verified by an integration test
+against an in-process Postgres (pglite). What remains unverified is the
+hosted-Supabase wiring (env, the JS client -> RPC round trip), which **needs a
+Supabase project + secrets to run** (see "Backend / Supabase" below).
 
 ## Docs
 
@@ -36,7 +37,7 @@ yet.
 | Email | Resend |
 | Auth | None for quiz-takers (email row + share_token); Supabase Auth for the single admin |
 | Analytics | PostHog (planned, week 1) |
-| Tests | Vitest (scoring engine + data integrity) |
+| Tests | Vitest: pure logic + crypto + a DB integration suite (real SQL on pglite); CI gate on every push |
 
 ## Key decisions baked in (vs the original spec)
 
@@ -103,8 +104,12 @@ error and the token route 404s.
    ```
    plus `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY` from the project settings.
-4. The privacy/RLS test from `docs/PLAN.md` (anon cannot read `answers`/`users`)
-   is not written yet — add it before launch.
+The SQL (all three migrations, the `complete_session` function, the
+`get_shared_result` privacy contract, and the RLS deny-by-default boundary) is
+verified by an integration test that runs the real schema against an in-process
+Postgres (pglite, no Docker): `src/lib/db.integration.test.ts`. It also asserts
+anon cannot read `answers`/`users` (the spec 5.2 privacy rule). CI runs it on
+every push.
 
 ## PDF export
 
