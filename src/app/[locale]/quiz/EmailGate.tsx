@@ -25,6 +25,7 @@ const ERROR_KEY: Record<CompleteSessionError, string> = {
   invalid_email: 'errorInvalidEmail',
   consent_required: 'errorConsent',
   incomplete: 'errorIncomplete',
+  rate_limited: 'errorRateLimited',
   server_error: 'errorServer',
 };
 

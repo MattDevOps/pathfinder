@@ -35,6 +35,7 @@
     "errorInvalidEmail": "Please enter a valid email address.",
     "errorConsent": "Please accept the privacy policy to continue.",
     "errorIncomplete": "Some answers are missing. Please retake the quiz.",
+    "errorRateLimited": "Too many attempts. Please wait a little while and try again.",
     "errorServer": "Something went wrong saving your profile. Please try again."
   },
   "Results": {

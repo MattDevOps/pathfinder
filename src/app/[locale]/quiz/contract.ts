@@ -16,6 +16,7 @@ export type CompleteSessionError =
   | 'invalid_email'
   | 'consent_required'
   | 'incomplete'
+  | 'rate_limited'
   | 'server_error';
 
 export type CompleteSessionResult =

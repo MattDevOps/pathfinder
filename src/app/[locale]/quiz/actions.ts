@@ -9,6 +9,7 @@ import type { CompleteSessionArgs } from '@/lib/supabase/types';
 import type { CompleteSessionInput, CompleteSessionResult } from './contract';
 import { PRIVACY_POLICY_VERSION } from '@/lib/privacy';
 import { sendResultsEmail } from '@/lib/email';
+import { SlidingWindowRateLimiter } from '@/lib/rate-limit';
 
 // Terminal write of the funnel (the post-quiz email gate submits here). Runs on
 // the server: it re-scores the answers from the questions source of truth,
@@ -16,6 +17,18 @@ import { sendResultsEmail } from '@/lib/email';
 // The client's own scores are never trusted.
 
 const SHARE_TOKEN_RETRIES = 3;
+
+// Abuse limits on the public submit (PLAN.md section 4: per-IP + per-email/day).
+// Per-email uses the HMAC blind index as the key, not the plaintext address.
+// In-process state — see rate-limit.ts on the multi-instance caveat.
+const submitIpLimiter = new SlidingWindowRateLimiter({
+  maxEvents: 10,
+  windowMs: 10 * 60 * 1000, // 10 / 10 min per IP
+});
+const submitEmailLimiter = new SlidingWindowRateLimiter({
+  maxEvents: 5,
+  windowMs: 24 * 60 * 60 * 1000, // 5 / day per email (allows retakes, blocks bombing)
+});
 
 // Basic shape check; real deliverability is verified by the confirmation email.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,8 +48,21 @@ export async function completeSession(
 
   const language = input.language === 'he' ? 'he' : 'en';
   const h = await headers();
-  const ip = clientIp(h);
+  const ip = clientIp(h) ?? 'unknown';
   const origin = requestOrigin(h);
+
+  // Abuse throttle: per-IP and per-email/day (keyed by blind index, not the
+  // plaintext email). Record every submission that passes validation.
+  const emailIndex = emailBlindIndex(email);
+  const now = Date.now();
+  if (
+    submitIpLimiter.isBlocked(ip, now) ||
+    submitEmailLimiter.isBlocked(emailIndex, now)
+  ) {
+    return { ok: false, error: 'rate_limited' };
+  }
+  submitIpLimiter.record(ip, now);
+  submitEmailLimiter.record(emailIndex, now);
 
   let supabase;
   try {
@@ -48,7 +74,7 @@ export async function completeSession(
 
   const baseArgs: Omit<CompleteSessionArgs, 'p_share_token'> = {
     p_email_encrypted: encryptEmail(email),
-    p_email_index: emailBlindIndex(email),
+    p_email_index: emailIndex,
     p_name: input.name?.trim() || null,
     p_language: language,
     p_dims: record.dims,

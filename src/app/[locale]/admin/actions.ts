@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyPassword } from '@/lib/admin-auth';
 import { setAdminSession, clearAdminSession } from '@/lib/admin-session';
-import { FailureRateLimiter } from '@/lib/rate-limit';
+import { SlidingWindowRateLimiter } from '@/lib/rate-limit';
 
 // Admin login/logout. Single-account: the password is checked against the
 // scrypt hash in ADMIN_PASSWORD_HASH. On success we set a signed session cookie
@@ -14,8 +14,8 @@ import { FailureRateLimiter } from '@/lib/rate-limit';
 // are reused so this is meaningful for a single-admin login; a multi-instance
 // deployment should back it with a shared store (Upstash/DB) behind the same
 // interface (see rate-limit.ts).
-const loginLimiter = new FailureRateLimiter({
-  maxFailures: 5,
+const loginLimiter = new SlidingWindowRateLimiter({
+  maxEvents: 5,
   windowMs: 15 * 60 * 1000,
 });
 
@@ -40,7 +40,7 @@ export async function login(
   }
 
   if (!verifyPassword(password, hash)) {
-    loginLimiter.recordFailure(ip, now);
+    loginLimiter.record(ip, now);
     return { ok: false, error: 'invalid' };
   }
 
