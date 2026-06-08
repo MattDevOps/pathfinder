@@ -31,3 +31,35 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Only Chromium is configured in playwright.config.ts. --with-deps pulls
+      # the OS libraries the headless browser needs on the runner.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Runs landing -> quiz -> gate -> results + both PDF routes against a
+      # `next dev` server (started by playwright.config webServer). No Supabase
+      # secrets needed: the funnel stops before the email submit, and the PDF
+      # route renders via the bundled @sparticuz/chromium.
+      - name: E2E (Playwright)
+        run: npm run test:e2e
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
