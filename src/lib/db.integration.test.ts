@@ -29,6 +29,7 @@ async function migratedDb(): Promise<PGlite> {
   `);
   await db.exec(readMigration('0002_rls.sql'));
   await db.exec(readMigration('0003_complete_session.sql'));
+  await db.exec(readMigration('0004_admin_list.sql'));
   return db;
 }
 
@@ -188,6 +189,32 @@ describe('get_shared_result (privacy contract)', () => {
     await db.exec(`update sessions set status = 'in_progress'`);
     const r = await db.query(`select * from public.get_shared_result($1)`, ['share_me']);
     expect(r.rows).toHaveLength(0);
+  });
+});
+
+describe('admin_list_results', () => {
+  let db: PGlite;
+  beforeEach(async () => {
+    db = await migratedDb();
+  });
+
+  it('returns completed results with the encrypted email, newest first', async () => {
+    await callComplete(db, { emailIndex: 'idx-a', shareToken: 'tok_a', emailEncrypted: 'ENC_A' });
+    await callComplete(db, { emailIndex: 'idx-b', shareToken: 'tok_b', emailEncrypted: 'ENC_B' });
+
+    const r = await db.query<{ email_encrypted: string; share_token: string; profile_title: string }>(
+      `select email_encrypted, share_token, profile_title from public.admin_list_results(100)`,
+    );
+    expect(r.rows).toHaveLength(2);
+    // Emails are returned as ciphertext only (decryption happens in the app).
+    expect(r.rows.map((x) => x.email_encrypted).sort()).toEqual(['ENC_A', 'ENC_B']);
+    expect(r.rows.every((x) => x.profile_title === 'The Innovator')).toBe(true);
+  });
+
+  it('is not executable by anon', async () => {
+    await db.exec(`set role anon`);
+    await expect(db.query(`select * from public.admin_list_results(10)`)).rejects.toThrow();
+    await db.exec(`reset role`);
   });
 });
 
