@@ -22,6 +22,7 @@ Supabase project + secrets to run** (see "Backend / Supabase" below).
 
 ## Docs
 
+- `docs/STATUS.md` — living status + work tracker (what's done, in flight, blocked, next up). Keep current.
 - `docs/PLAN.md` — full build plan + decision brief (output of a multi-agent review).
 - `docs/FOUNDER-QUESTIONS.md` — open product/content/legal decisions blocking the results engine.
 - `docs/spec-extracted.md` — the original spec (text-extracted from the source .docx).
