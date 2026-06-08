@@ -124,3 +124,21 @@ CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome npm run dev
 
 The token variant (`/results/[token]/pdf`) is a one-line reuse of
 `renderUrlToPdf` once the DB is live.
+
+## Admin
+
+`/[locale]/admin` is a single-account dashboard (results table + CSV export).
+Auth is self-contained (`node:crypto`): a scrypt password hash plus an HS256
+JWT session cookie. To configure:
+
+```bash
+# Generate the password hash for ADMIN_PASSWORD_HASH:
+npx tsx -e "import {hashPassword} from './src/lib/admin-auth'; console.log(hashPassword('YOUR_PASSWORD'))"
+# Generate a >=32-byte secret for ADMIN_JWT_SECRET:
+openssl rand -hex 32
+```
+
+Set both in `.env.local`. The dashboard's data + CSV export need Supabase
+(`admin_list_results`, migration 0004); the login/guard work without it.
+**Before launch:** add per-IP rate limiting on failed logins (noted in
+`admin/actions.ts`).
