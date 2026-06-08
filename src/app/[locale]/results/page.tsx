@@ -37,6 +37,11 @@ export default async function ResultsPage({
   };
 
   return (
-    <ResultsView scores={scores} locale={locale as Locale} toggleHref="/results" />
+    <ResultsView
+      scores={scores}
+      locale={locale as Locale}
+      toggleHref="/results"
+      source="preview"
+    />
   );
 }

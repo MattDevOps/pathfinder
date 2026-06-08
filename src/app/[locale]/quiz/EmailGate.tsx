@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
+import { capture, EVENTS } from '@/lib/analytics';
 import { QUESTIONS } from '@/data/questions';
 import { scoresFromSelections, type Selections } from '@/lib/quiz-session';
 import { buildProfile } from '@/lib/profile';
@@ -43,6 +44,13 @@ export default function EmailGate({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const gateViewedRef = useRef(false);
+  useEffect(() => {
+    if (gateViewedRef.current) return;
+    gateViewedRef.current = true;
+    capture(EVENTS.gateViewed);
+  }, []);
+
   // Instant teaser title (client-side scoring; the server recomputes
   // authoritatively on submit). Title is English-only for now (draft).
   const title = useMemo(() => {
@@ -68,11 +76,14 @@ export default function EmailGate({
         consent,
       });
       if (res.ok) {
+        capture(EVENTS.gateSubmitted);
         router.push(`/results/${res.shareToken}`);
         return;
       }
+      capture(EVENTS.gateError, { error: res.error });
       setError(t(ERROR_KEY[res.error]));
     } catch {
+      capture(EVENTS.gateError, { error: 'exception' });
       setError(t('errorServer'));
     } finally {
       setSubmitting(false);
@@ -124,8 +135,7 @@ export default function EmailGate({
           />
           <span>
             {t('consent')}{' '}
-            {/* DRAFT: privacy policy route does not exist yet. */}
-            <Link href="/" className="underline underline-offset-2">
+            <Link href="/privacy" className="underline underline-offset-2">
               {t('privacyLink')}
             </Link>
           </span>
@@ -144,6 +154,7 @@ export default function EmailGate({
 
       <Link
         href={previewHref}
+        onClick={() => capture(EVENTS.resultPreviewed)}
         className="text-center text-sm text-foreground/50 underline-offset-2 hover:underline"
       >
         {t('preview')}

@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Locale } from '@/i18n/routing';
+import { capture, EVENTS } from '@/lib/analytics';
 import { QUESTIONS } from '@/data/questions';
 import type { Question } from '@/lib/types';
 import {
@@ -33,6 +34,11 @@ export default function Quiz({ locale }: { locale: Locale }) {
   // question UI.
   const [completed, setCompleted] = useState<Selections | null>(null);
 
+  // Funnel timing/instrumentation. startedRef guards quiz_started against React
+  // StrictMode's double effect invocation in dev.
+  const startedRef = useRef(false);
+  const startTimeRef = useRef(0);
+
   const byId = useMemo(
     () => new Map(QUESTIONS.map((q) => [q.id, q] as const)),
     [],
@@ -57,6 +63,12 @@ export default function Quiz({ locale }: { locale: Locale }) {
     setSession(
       restored ?? createSession(QUESTIONS, locale, crypto.randomUUID()),
     );
+
+    if (!startedRef.current) {
+      startedRef.current = true;
+      startTimeRef.current = Date.now();
+      capture(EVENTS.quizStarted, { resumed: restored !== null, locale });
+    }
   }, [locale]);
 
   // Persist on every change.
@@ -75,14 +87,24 @@ export default function Quiz({ locale }: { locale: Locale }) {
     } catch {
       // ignore
     }
+    capture(EVENTS.quizCompleted, {
+      durationMs: startTimeRef.current ? Date.now() - startTimeRef.current : null,
+    });
     setCompleted(selections);
   }, []);
 
   const select = useCallback(
     (questionId: string, optionId: (typeof OPTION_IDS)[number]) => {
       if (!session) return;
+      const isNew = !(questionId in session.selections);
       const selections = { ...session.selections, [questionId]: optionId };
       const answeredAll = Object.keys(selections).length >= total;
+      capture(EVENTS.questionAnswered, {
+        index: session.currentIndex,
+        questionId,
+        option: optionId,
+        changed: !isNew,
+      });
       const next: QuizSession = {
         ...session,
         selections,

@@ -7,13 +7,13 @@ import { encryptEmail, emailBlindIndex, generateShareToken } from '@/lib/crypto'
 import { createServiceClient } from '@/lib/supabase/server';
 import type { CompleteSessionArgs } from '@/lib/supabase/types';
 import type { CompleteSessionInput, CompleteSessionResult } from './contract';
+import { PRIVACY_POLICY_VERSION } from '@/lib/privacy';
 
 // Terminal write of the funnel (the post-quiz email gate submits here). Runs on
 // the server: it re-scores the answers from the questions source of truth,
 // encrypts the email, and persists everything atomically via complete_session.
 // The client's own scores are never trusted.
 
-const PRIVACY_POLICY_VERSION = '2026-06-draft';
 const SHARE_TOKEN_RETRIES = 3;
 
 // Basic shape check; real deliverability is verified by the confirmation email.

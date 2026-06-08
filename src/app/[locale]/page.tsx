@@ -2,6 +2,8 @@ import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { use } from 'react';
+import TrackEvent from './TrackEvent';
+import { EVENTS } from '@/lib/analytics';
 
 // Screen 1 of the user journey (spec 4.1): landing page with hero,
 // "how it works", and the HE/EN language toggle. RTL is handled globally
@@ -20,6 +22,7 @@ export default function LandingPage({
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-center">
+      <TrackEvent event={EVENTS.landingViewed} />
       <div className="flex w-full max-w-2xl justify-end">
         {/* Language toggle: links to the same page in the other locale. */}
         <Link

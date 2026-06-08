@@ -3,6 +3,8 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import type { DimensionScores } from '@/lib/types';
 import { buildProfile, type ScenarioView } from '@/lib/profile';
+import TrackEvent from '../TrackEvent';
+import { EVENTS } from '@/lib/analytics';
 
 // Presentational results profile, shared by the query-param preview page
 // (/results) and the public share-token page (/results/[token]). It takes raw
@@ -15,10 +17,12 @@ export default async function ResultsView({
   scores,
   locale,
   toggleHref,
+  source,
 }: {
   scores: DimensionScores;
   locale: Locale;
   toggleHref: string;
+  source: 'preview' | 'shared';
 }) {
   const profile = buildProfile(scores, locale);
   const t = await getTranslations({ locale, namespace: 'Results' });
@@ -26,6 +30,10 @@ export default async function ResultsView({
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-6 py-12">
+      <TrackEvent
+        event={EVENTS.resultViewed}
+        props={{ source, cluster: profile.cluster }}
+      />
       <p className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-center text-sm text-amber-700 dark:text-amber-300">
         {t('draftBanner')}
       </p>

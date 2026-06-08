@@ -53,6 +53,7 @@ export default async function SharedResultPage({
       scores={scores}
       locale={locale as Locale}
       toggleHref={`/results/${token}`}
+      source="shared"
     />
   );
 }
