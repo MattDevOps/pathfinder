@@ -18,11 +18,13 @@ export default function LoginForm({ locale }: { locale: Locale }) {
     try {
       const res = await login(locale, password);
       // Only reached on failure (success redirects server-side).
-      setError(
-        res.error === 'not_configured'
-          ? 'Admin login is not configured (set ADMIN_PASSWORD_HASH and ADMIN_JWT_SECRET).'
-          : 'Incorrect password.',
-      );
+      const message = {
+        not_configured:
+          'Admin login is not configured (set ADMIN_PASSWORD_HASH and ADMIN_JWT_SECRET).',
+        rate_limited: 'Too many attempts. Please wait a few minutes and try again.',
+        invalid: 'Incorrect password.',
+      }[res.error];
+      setError(message);
     } catch (err) {
       // A thrown NEXT_REDIRECT is the success path — let it propagate.
       if (
