@@ -105,3 +105,17 @@ error and the token route 404s.
    `SUPABASE_SERVICE_ROLE_KEY` from the project settings.
 4. The privacy/RLS test from `docs/PLAN.md` (anon cannot read `answers`/`users`)
    is not written yet — add it before launch.
+
+## PDF export
+
+`GET /[locale]/results/pdf?d1=..&d2=..&d3=..&d4=..` renders the results page to
+PDF with headless Chromium (correct Hebrew bidi via the self-hosted Rubik
+font). On Vercel, `@sparticuz/chromium` supplies the binary. For **local dev**,
+point it at a system Chrome:
+
+```bash
+CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome npm run dev
+```
+
+The token variant (`/results/[token]/pdf`) is a one-line reuse of
+`renderUrlToPdf` once the DB is live.
