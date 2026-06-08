@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import type { CompleteSessionArgs } from '@/lib/supabase/types';
 import type { CompleteSessionInput, CompleteSessionResult } from './contract';
 import { PRIVACY_POLICY_VERSION } from '@/lib/privacy';
+import { sendResultsEmail } from '@/lib/email';
 
 // Terminal write of the funnel (the post-quiz email gate submits here). Runs on
 // the server: it re-scores the answers from the questions source of truth,
@@ -33,7 +34,9 @@ export async function completeSession(
   }
 
   const language = input.language === 'he' ? 'he' : 'en';
-  const ip = await clientIp();
+  const h = await headers();
+  const ip = clientIp(h);
+  const origin = requestOrigin(h);
 
   let supabase;
   try {
@@ -68,7 +71,17 @@ export async function completeSession(
     });
 
     if (!error) {
-      return { ok: true, shareToken: (data as string) ?? shareToken };
+      const token = (data as string) ?? shareToken;
+      // Best-effort results email — never block or fail the funnel on it.
+      if (origin) {
+        await sendResultsEmail(email, {
+          name: input.name,
+          title: record.title,
+          shareUrl: `${origin}/${language}/results/${token}`,
+          locale: language,
+        });
+      }
+      return { ok: true, shareToken: token };
     }
     if (error.code === '23505' && attempt < SHARE_TOKEN_RETRIES - 1) {
       continue; // token collision; try a new one
@@ -82,9 +95,17 @@ export async function completeSession(
 
 // Best-effort client IP from the proxy headers (for the consent record). Null
 // when unavailable; the column is nullable.
-async function clientIp(): Promise<string | null> {
-  const h = await headers();
+function clientIp(h: Headers): string | null {
   const fwd = h.get('x-forwarded-for');
   if (fwd) return fwd.split(',')[0].trim();
   return h.get('x-real-ip');
+}
+
+// Absolute origin for building the share URL in the results email. Null if the
+// host header is missing (then we skip the email rather than send a broken link).
+function requestOrigin(h: Headers): string | null {
+  const host = h.get('x-forwarded-host') ?? h.get('host');
+  if (!host) return null;
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  return `${proto}://${host}`;
 }
