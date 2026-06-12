@@ -1,25 +1,24 @@
 import { test, expect } from '@playwright/test';
-import { answerAllQuestions, TOTAL_QUESTIONS } from './helpers';
+import { completeQuiz, completeVisual, PHASE1_COUNT, PHASE2_COUNT } from './helpers';
 
-// The funnel the way a real user walks it: landing -> quiz -> post-quiz email
-// gate -> preview results. Stops short of the email submit (that path needs
-// Supabase secrets); the consent-validation check below exercises the server
-// action up to the point it rejects, which happens before any DB call.
+// The v5 funnel the way a real user walks it: landing -> Phase 0 visual ->
+// Phase 1 -> interstitial -> Phase 2 -> post-quiz email gate -> preview results.
+// Stops short of the email submit (that path needs Supabase secrets); the
+// consent-validation check exercises the server action up to the point it
+// rejects, which happens before any DB call.
 
 test.describe('landing', () => {
-  test('renders the hero and starts the quiz', async ({ page }) => {
+  test('renders the brand and starts the quiz', async ({ page }) => {
     await page.goto('/en');
 
-    await expect(
-      page.getByRole('heading', { name: 'Find your direction' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pathfinder' })).toBeVisible();
 
-    const start = page.getByRole('link', { name: 'Start the quiz' });
+    const start = page.getByRole('link', { name: 'Start' });
     await expect(start).toBeVisible();
     await start.click();
 
     await expect(page).toHaveURL(/\/en\/quiz$/);
-    await expect(page.getByText('Question 1 of 40')).toBeVisible();
+    await expect(page.getByText('Phase 0 · Step 1 of 4')).toBeVisible();
   });
 
   test('has no console errors on load', async ({ page }) => {
@@ -32,47 +31,34 @@ test.describe('landing', () => {
   });
 });
 
-test.describe('quiz navigation', () => {
-  test('back is disabled on Q1, enabled after, and goes back one', async ({
+test.describe('Phase 0 navigation', () => {
+  test('back is disabled on step 1 and Continue gates on a selection', async ({
     page,
   }) => {
     await page.goto('/en/quiz');
-    await expect(page.getByText('Question 1 of 40')).toBeVisible();
+    await expect(page.getByText('Phase 0 · Step 1 of 4')).toBeVisible();
 
-    // exact: true — the quiz shuffles options, and an answer can contain the
-    // word "back"; a substring match would ambiguously hit it too.
-    const back = page.getByRole('button', { name: 'Back', exact: true });
-    await expect(back).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeDisabled();
+    const cont = page.getByRole('button', { name: 'Continue', exact: true });
+    await expect(cont).toBeDisabled();
 
-    // Answer Q1 -> auto-advance to Q2.
-    await page.locator('fieldset button').first().click();
-    await expect(page.getByText('Question 2 of 40')).toBeVisible();
-    await expect(back).toBeEnabled();
-
-    // Back-one returns to Q1.
-    await back.click();
-    await expect(page.getByText('Question 1 of 40')).toBeVisible();
-    await expect(back).toBeDisabled();
-  });
-
-  test('keyboard 1-4 selects an option and advances', async ({ page }) => {
-    await page.goto('/en/quiz');
-    await expect(page.getByText('Question 1 of 40')).toBeVisible();
-    await page.keyboard.press('2');
-    await expect(page.getByText('Question 2 of 40')).toBeVisible();
+    // Three colours unlock Continue.
+    for (const c of ['blu', 'verde', 'rosso']) await page.getByLabel(c).click();
+    await expect(cont).toBeEnabled();
+    await cont.click();
+    await expect(page.getByText('Phase 0 · Step 2 of 4')).toBeVisible();
   });
 });
 
 test.describe('full funnel', () => {
-  test('completing the quiz reaches the email gate with a teaser', async ({
+  test('completing the funnel reaches the email gate with a teaser', async ({
     page,
   }) => {
-    test.slow(); // 40 questions + gate
+    test.slow(); // visual + 27 questions
 
     await page.goto('/en/quiz');
-    await answerAllQuestions(page);
+    await completeQuiz(page);
 
-    // Email gate (funnel C1: gate AFTER the quiz, with a teaser title).
     await expect(page.getByText('Your profile is ready')).toBeVisible();
     await expect(page.getByText(/You came out as .+\./)).toBeVisible();
     await expect(page.getByRole('checkbox')).toBeVisible();
@@ -84,7 +70,7 @@ test.describe('full funnel', () => {
     test.slow();
 
     await page.goto('/en/quiz');
-    await answerAllQuestions(page);
+    await completeQuiz(page);
     await expect(page.getByText('Your profile is ready')).toBeVisible();
 
     // Valid email but consent unchecked -> the server action returns
@@ -102,22 +88,31 @@ test.describe('full funnel', () => {
     test.slow();
 
     await page.goto('/en/quiz');
-    await answerAllQuestions(page);
+    await completeQuiz(page);
     await expect(page.getByText('Your profile is ready')).toBeVisible();
 
     await page
       .getByRole('link', { name: "Just show me a preview (don't save)" })
       .click();
 
-    // Lands on the query-param (unsaved) results route with all four dims.
-    await expect(page).toHaveURL(/\/en\/results\?d1=\d+&d2=\d+&d3=\d+&d4=\d+/);
+    // Lands on the query-param (unsaved) results route with archetype + domain.
+    await expect(page).toHaveURL(/\/en\/results\?a=\w+&dom=\w+/);
     await expect(
-      page.getByRole('heading', { name: 'Your three paths' }),
+      page.getByRole('heading', { name: 'Your specific paths' }),
     ).toBeVisible();
   });
 });
 
-test('quiz has exactly 40 questions', () => {
-  // Guards the funnel copy ("Question N of 40") against a questions.ts change.
-  expect(TOTAL_QUESTIONS).toBe(40);
+test('the funnel has 15 + 12 questions', () => {
+  // Guards the funnel copy ("Question N of 15/12") against a data change.
+  expect(PHASE1_COUNT).toBe(15);
+  expect(PHASE2_COUNT).toBe(12);
+});
+
+test('Phase 0 can be completed independently', async ({ page }) => {
+  await page.goto('/en/quiz');
+  await completeVisual(page);
+  await expect(page.getByText(`Question 1 of ${PHASE1_COUNT}`)).toBeVisible({
+    timeout: 15_000,
+  });
 });

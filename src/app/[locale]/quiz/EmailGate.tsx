@@ -5,21 +5,24 @@ import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { capture, EVENTS } from '@/lib/analytics';
-import { QUESTIONS } from '@/data/questions';
-import { scoresFromSelections, type Selections } from '@/lib/quiz-session';
-import { buildProfile } from '@/lib/profile';
+import {
+  calcDimensions,
+  calcArchetype,
+  calcDomain,
+  congruence,
+  type Selections,
+  type VisualProfile,
+} from '@/lib/archetype';
+import { ARCHETYPES } from '@/data/careers';
+import { t as L } from '@/lib/localized';
 import { completeSession } from './actions';
 import type { CompleteSessionError } from './contract';
 
-// Post-quiz email gate (funnel decision C1: gate AFTER the quiz, with a teaser).
-// Shows the profile title computed client-side for an instant teaser, then
-// collects email + consent and submits to the completeSession server action,
-// which re-scores server-side and persists. On success we route to the
-// shareable /results/[token]. A "preview" escape hatch renders the unsaved,
-// query-param result instead.
-//
-// NOTE: the consent copy + privacy link are DRAFT pending the privacy policy
-// and founder sign-off (PLAN.md section 4).
+// Post-quiz email gate (gate AFTER the funnel, with a teaser). Shows the
+// archetype computed client-side for an instant teaser, then collects email +
+// consent and submits to completeSession, which re-scores server-side and
+// persists. On success we route to the shareable /results/[token]. A "preview"
+// escape hatch renders the unsaved, query-param result instead.
 
 const ERROR_KEY: Record<CompleteSessionError, string> = {
   invalid_email: 'errorInvalidEmail',
@@ -30,11 +33,19 @@ const ERROR_KEY: Record<CompleteSessionError, string> = {
 };
 
 export default function EmailGate({
-  selections,
   locale,
+  visual,
+  phase1,
+  phase2,
+  openP1,
+  openP2,
 }: {
-  selections: Selections;
   locale: Locale;
+  visual: VisualProfile;
+  phase1: Selections;
+  phase2: Selections;
+  openP1: Record<string, string>;
+  openP2: Record<string, string>;
 }) {
   const t = useTranslations('Gate');
   const router = useRouter();
@@ -52,17 +63,17 @@ export default function EmailGate({
     capture(EVENTS.gateViewed);
   }, []);
 
-  // Instant teaser title (client-side scoring; the server recomputes
-  // authoritatively on submit). Title is English-only for now (draft).
-  const title = useMemo(() => {
-    const scores = scoresFromSelections(selections, QUESTIONS);
-    return buildProfile(scores, locale).title;
-  }, [selections, locale]);
-
-  const previewHref = useMemo(() => {
-    const s = scoresFromSelections(selections, QUESTIONS);
-    return `/results?d1=${s.dim1}&d2=${s.dim2}&d3=${s.dim3}&d4=${s.dim4}`;
-  }, [selections]);
+  // Instant teaser + preview link (client-side scoring; the server recomputes
+  // authoritatively on submit).
+  const { title, previewHref } = useMemo(() => {
+    const dims = calcDimensions(phase1);
+    const archId = calcArchetype(dims, visual);
+    const domain = calcDomain(phase2, visual);
+    const cong = congruence(dims, archId);
+    const arch = ARCHETYPES.find((a) => a.id === archId)!;
+    const q = `a=${archId}&dom=${domain}&d1=${dims.d1}&d2=${dims.d2}&d3=${dims.d3}&d4=${dims.d4}&c=${cong}`;
+    return { title: L(arch.name, locale), previewHref: `/results?${q}` };
+  }, [phase1, phase2, visual, locale]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,7 +81,11 @@ export default function EmailGate({
     setSubmitting(true);
     try {
       const res = await completeSession({
-        selections,
+        visual,
+        phase1,
+        phase2,
+        openP1,
+        openP2,
         email,
         name,
         language: locale,

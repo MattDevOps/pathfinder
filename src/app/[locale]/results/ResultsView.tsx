@@ -1,111 +1,170 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import type { Locale } from '@/i18n/routing';
-import type { DimensionScores } from '@/lib/types';
-import { buildProfile, type ScenarioView } from '@/lib/profile';
+import { locales, type Locale } from '@/i18n/routing';
+import type { Dimensions, VisualProfile } from '@/lib/archetype';
+import type { ArchetypeId, DomainId } from '@/lib/types';
+import { buildProfile } from '@/lib/profile';
 import TrackEvent from '../TrackEvent';
 import ShareButton from './ShareButton';
 import { EVENTS } from '@/lib/analytics';
 
 // Presentational results profile, shared by the query-param preview page
-// (/results) and the public share-token page (/results/[token]). It takes raw
-// 0-100 scores + the render locale and recomputes the full DRAFT profile
-// (title, cluster, dimension labels, scenarios, content) so both routes render
-// identically. `toggleHref` is where the language switch points (the same
-// content in the other locale).
+// (/results) and the public share-token page (/results/[token]). It takes the
+// server-scored result + the render locale and resolves the localized archetype
+// x domain view (careers, dimensions, visual signature) so both routes render
+// identically. `toggleHref` is where the language switch points.
+
+export interface ResultInput {
+  archetype: ArchetypeId;
+  domain: DomainId;
+  dims: Dimensions;
+  congruence: number;
+}
 
 export default async function ResultsView({
-  scores,
+  result,
+  visual,
   locale,
   toggleHref,
   source,
   pdfHref,
 }: {
-  scores: DimensionScores;
+  result: ResultInput;
+  visual: VisualProfile;
   locale: Locale;
   toggleHref: string;
   source: 'preview' | 'shared';
   pdfHref: string;
 }) {
-  const profile = buildProfile(scores, locale);
+  const profile = buildProfile(result, visual, locale);
   const t = await getTranslations({ locale, namespace: 'Results' });
-  const other = locale === 'he' ? 'en' : 'he';
+  const others = locales.filter((l) => l !== locale);
+  const hasSignature = profile.visual.colorDescs.length > 0 || !!profile.visual.shapeName;
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-6 py-12">
       <TrackEvent
         event={EVENTS.resultViewed}
-        props={{ source, cluster: profile.cluster }}
+        props={{ source, archetype: profile.archetype.id, domain: profile.domain }}
       />
-      <p className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-center text-sm text-amber-700 dark:text-amber-300">
-        {t('draftBanner')}
-      </p>
 
-      <div className="flex justify-end">
-        <Link
-          href={toggleHref}
-          locale={other}
-          className="rounded-full border border-black/10 px-4 py-1.5 text-sm hover:bg-black/5"
-        >
-          {locale === 'he' ? 'English' : 'עברית'}
-        </Link>
+      <div className="flex justify-end gap-2">
+        {others.map((l) => (
+          <Link
+            key={l}
+            href={toggleHref}
+            locale={l}
+            className="rounded-full border border-foreground/15 px-4 py-1.5 text-sm hover:bg-foreground/5"
+          >
+            {l.toUpperCase()}
+          </Link>
+        ))}
       </div>
 
       <header className="flex flex-col items-center gap-3 text-center">
-        <span className="text-sm uppercase tracking-widest text-foreground/50">
-          {t('profileLead')}
-        </span>
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          {profile.title}
+        <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+          <span className="rounded-full bg-foreground/10 px-3 py-1 font-medium">
+            {profile.archetype.name}
+          </span>
+          <span className="text-foreground/40">×</span>
+          <span className="rounded-full bg-foreground/10 px-3 py-1 font-medium">
+            {profile.domainName}
+          </span>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          {t('combo', { icon: profile.archetype.icon, domain: profile.domainName })}
         </h1>
-        <span className="rounded-full bg-foreground/5 px-3 py-1 text-sm text-foreground/70">
-          {t('sectorLabel')}: {profile.cluster}
-        </span>
+        <p className="max-w-xl text-foreground/70">{t('sub')}</p>
+        <p className="max-w-2xl text-sm text-foreground/60">{profile.archetype.sub}</p>
       </header>
 
-      <section className="flex flex-col gap-5">
+      <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">{t('dimensionsHeading')}</h2>
         <ul className="flex flex-col gap-4">
-          {profile.dimensions.map((d) => (
-            <li key={d.dimension} className="flex flex-col gap-1.5">
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="font-medium">{t(`dimension.${d.dimension}`)}</span>
-                <span className="text-sm text-foreground/60">
-                  {d.label} · {d.score}
-                </span>
-              </div>
-              <div className="relative h-2 w-full overflow-hidden rounded-full bg-foreground/10">
-                <div
-                  className="absolute inset-y-0 start-0 rounded-full bg-foreground"
-                  style={{ width: `${d.score}%` }}
-                />
-              </div>
-            </li>
-          ))}
+          {profile.dimensions.map((d) => {
+            const word =
+              d.band === 'low'
+                ? t(`dimWord.${d.key}.low`)
+                : d.band === 'high'
+                  ? t(`dimWord.${d.key}.high`)
+                  : t('balanced');
+            return (
+              <li key={d.key} className="flex flex-col gap-1.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-medium">{t(`dimAxis.${d.key}`)}</span>
+                  <span className="text-sm text-foreground/60">
+                    {word} · {d.score}
+                  </span>
+                </div>
+                <div className="relative h-2 w-full overflow-hidden rounded-full bg-foreground/10">
+                  <div
+                    className="absolute inset-y-0 start-0 rounded-full bg-foreground"
+                    style={{ width: `${d.score}%` }}
+                  />
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
-      <section className="flex flex-col gap-5">
-        <h2 className="text-lg font-semibold">{t('scenariosHeading')}</h2>
-        <div className="flex flex-col gap-5">
-          {profile.scenarios.map((s) => (
-            <ScenarioCard
-              key={s.key}
-              scenario={s}
-              pathLabel={t(`scenario.${s.key}`)}
-              strengthLabel={t(`strength.${s.strength}`)}
-              rolesLabel={t('rolesLabel')}
-              nextStepsLabel={t('nextStepsLabel')}
-              pendingLabel={t('translationPending')}
-            />
+      {hasSignature && (
+        <section className="flex flex-col gap-3 rounded-2xl border border-foreground/10 p-6">
+          <span className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
+            {t('visualLabel')}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {profile.visual.colorDescs.map((d) => (
+              <span key={d} className="rounded-full bg-foreground/5 px-3 py-1 text-sm">
+                🎨 {d}
+              </span>
+            ))}
+            {profile.visual.shapeName && (
+              <span className="rounded-full bg-foreground/5 px-3 py-1 text-sm">
+                ◈ {profile.visual.shapeName} — {profile.visual.shapeDesc}
+              </span>
+            )}
+          </div>
+          <p className="text-sm italic text-foreground/60">{t(`align.${profile.visual.note}`)}</p>
+        </section>
+      )}
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">{t('careersHeading')}</h2>
+        <div className="flex flex-col gap-4">
+          {profile.careers.map((c) => (
+            <article
+              key={c.name}
+              className={`flex flex-col gap-3 rounded-2xl border p-6 ${
+                c.best ? 'border-foreground/40' : 'border-foreground/10'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-lg font-semibold">
+                  {c.best ? '✦ ' : ''}
+                  {c.name}
+                </h3>
+                <span className="shrink-0 rounded-full bg-foreground/10 px-3 py-1 text-xs font-medium">
+                  {c.congruence}
+                  {t('congruenceSuffix')}
+                </span>
+              </div>
+              <p className="text-foreground/70">{c.desc}</p>
+              <p className="rounded-lg bg-foreground/5 px-3 py-2 text-sm text-foreground/80">
+                <strong>{t('firstStep')}</strong> {c.firstStep}
+              </p>
+            </article>
           ))}
         </div>
       </section>
 
+      <section className="flex flex-col gap-2 rounded-2xl bg-foreground/5 p-6 text-center">
+        <h3 className="text-lg font-semibold">{t('philoTitle')}</h3>
+        <p className="mx-auto max-w-xl text-sm text-foreground/70">{t('philoBody')}</p>
+      </section>
+
       <section className="flex flex-col items-stretch gap-3 border-t border-foreground/10 pt-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          {/* Real download: hits the PDF route handler, so a plain anchor (not
-              client nav) and it opens/saves the generated PDF. */}
           <a
             href={pdfHref}
             target="_blank"
@@ -118,74 +177,5 @@ export default async function ResultsView({
         </div>
       </section>
     </main>
-  );
-}
-
-const STRENGTH_STYLES: Record<ScenarioView['strength'], string> = {
-  high: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-  medium: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-  low: 'bg-foreground/10 text-foreground/60',
-};
-
-function ScenarioCard({
-  scenario,
-  pathLabel,
-  strengthLabel,
-  rolesLabel,
-  nextStepsLabel,
-  pendingLabel,
-}: {
-  scenario: ScenarioView;
-  pathLabel: string;
-  strengthLabel: string;
-  rolesLabel: string;
-  nextStepsLabel: string;
-  pendingLabel: string;
-}) {
-  const { content, strength } = scenario;
-  const pending = content.headline.trim() === '';
-
-  return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-foreground/10 p-6">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-xl font-semibold">{pathLabel}</h3>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${STRENGTH_STYLES[strength]}`}>
-          {strengthLabel}
-        </span>
-      </div>
-
-      {pending ? (
-        <p className="text-sm italic text-foreground/40">{pendingLabel}</p>
-      ) : (
-        <>
-          <p className="font-medium text-foreground/90">{content.headline}</p>
-          <p className="text-foreground/70">{content.paragraph}</p>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
-              {rolesLabel}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {content.roles.map((role) => (
-                <span key={role} className="rounded-full bg-foreground/5 px-3 py-1 text-sm">
-                  {role}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
-              {nextStepsLabel}
-            </span>
-            <ol className="flex list-inside list-decimal flex-col gap-1 text-sm text-foreground/70">
-              {content.nextSteps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </div>
-        </>
-      )}
-    </article>
   );
 }

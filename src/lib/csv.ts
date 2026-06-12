@@ -37,12 +37,13 @@ export interface ResultExportRecord {
   email: string; // decrypted server-side for the export only
   name: string | null;
   language: string;
-  profile_title: string;
-  sector_cluster: string;
+  archetype: string;
+  domain: string;
   dim1_score: number;
   dim2_score: number;
   dim3_score: number;
   dim4_score: number;
+  congruence: number;
   created_at: string;
 }
 
@@ -50,12 +51,13 @@ const RESULT_HEADERS = [
   'email',
   'name',
   'language',
-  'profile_title',
-  'sector_cluster',
+  'archetype',
+  'domain',
   'dim1_score',
   'dim2_score',
   'dim3_score',
   'dim4_score',
+  'congruence',
   'created_at',
 ];
 
@@ -64,12 +66,13 @@ export function buildResultsCsv(records: ResultExportRecord[]): string {
     r.email,
     r.name ?? '',
     r.language,
-    r.profile_title,
-    r.sector_cluster,
+    r.archetype,
+    r.domain,
     r.dim1_score,
     r.dim2_score,
     r.dim3_score,
     r.dim4_score,
+    r.congruence,
     r.created_at,
   ]);
   return buildCsv(RESULT_HEADERS, rows);

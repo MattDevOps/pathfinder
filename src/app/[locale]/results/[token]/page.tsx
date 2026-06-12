@@ -2,19 +2,17 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { hasLocale } from 'next-intl';
 import { routing, type Locale } from '@/i18n/routing';
-import type { DimensionScores } from '@/lib/types';
+import type { ArchetypeId, DomainId } from '@/lib/types';
 import { createPublicClient } from '@/lib/supabase/server';
 import type { SharedResultRow } from '@/lib/supabase/types';
-import ResultsView from '../ResultsView';
+import { emptyVisual } from '@/lib/quiz-session';
+import ResultsView, { type ResultInput } from '../ResultsView';
 
 // Public, shareable result. Reads ONLY the result fields via the
-// get_shared_result(token) SECURITY DEFINER function (migration 0002) using the
+// get_shared_result(token) SECURITY DEFINER function (migration 0005) using the
 // anon client — answers, email, and user_id never leave the database. A
-// non-existent or non-completed token 404s.
-//
-// The page renders from the stored 0-100 scores; ResultsView recomputes the
-// DRAFT title/cluster/scenarios from them in the URL locale, so a recipient can
-// toggle EN/HE freely.
+// non-existent or non-completed token 404s. The stored visual profile lets the
+// shared page render the full visual signature; the recipient can toggle locale.
 
 export default async function SharedResultPage({
   params,
@@ -41,16 +39,17 @@ export default async function SharedResultPage({
 
   if (!row) notFound();
 
-  const scores: DimensionScores = {
-    dim1: row.dim1_score,
-    dim2: row.dim2_score,
-    dim3: row.dim3_score,
-    dim4: row.dim4_score,
+  const result: ResultInput = {
+    archetype: row.archetype as ArchetypeId,
+    domain: row.domain as DomainId,
+    dims: { d1: row.dim1_score, d2: row.dim2_score, d3: row.dim3_score, d4: row.dim4_score },
+    congruence: row.congruence,
   };
 
   return (
     <ResultsView
-      scores={scores}
+      result={result}
+      visual={row.visual ?? emptyVisual()}
       locale={locale as Locale}
       toggleHref={`/results/${token}`}
       source="shared"

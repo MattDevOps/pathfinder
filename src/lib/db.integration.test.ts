@@ -7,12 +7,11 @@ import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 // Integration test for the DB write/read path against a REAL Postgres engine
 // (pglite, in-process WASM — no Docker). This is the only place the SQL in
 // supabase/migrations actually runs, so it guards the scariest unverified code:
-// the complete_session plpgsql function, the get_shared_result privacy contract,
-// and the RLS deny-by-default boundary (PLAN.md sections 4-5).
+// the v5 complete_session plpgsql function, the get_shared_result privacy
+// contract, and the RLS deny-by-default boundary (PLAN.md sections 4-5).
 //
 // We recreate Supabase's pre-provisioned roles (anon/authenticated/service_role)
-// so the GRANT/REVOKE statements and RLS role-switching behave as they will in
-// production.
+// so the GRANT/REVOKE statements and RLS role-switching behave as in production.
 
 const MIGRATIONS_DIR = path.resolve(process.cwd(), 'supabase/migrations');
 const readMigration = (file: string) =>
@@ -30,6 +29,7 @@ async function migratedDb(): Promise<PGlite> {
   await db.exec(readMigration('0002_rls.sql'));
   await db.exec(readMigration('0003_complete_session.sql'));
   await db.exec(readMigration('0004_admin_list.sql'));
+  await db.exec(readMigration('0005_v5.sql'));
   return db;
 }
 
@@ -39,7 +39,8 @@ interface CompleteArgs {
   name?: string | null;
   language?: string;
   shareToken?: string;
-  answers?: Array<{ question_id: string; dimension: string; selected_option: string; score: number }>;
+  archetype?: string;
+  domain?: string;
   ip?: string | null;
 }
 
@@ -48,33 +49,31 @@ async function callComplete(db: PGlite, args: CompleteArgs = {}) {
     emailEncrypted = 'ENC',
     emailIndex = 'idx-default',
     name = 'Alice',
-    language = 'en',
+    language = 'it',
     shareToken = 'tok_default',
-    answers = [
-      { question_id: 'Q001', dimension: 'DIM_1', selected_option: 'C', score: 2 },
-      { question_id: 'Q002', dimension: 'DIM_1', selected_option: 'D', score: 3 },
-    ],
+    archetype = 'creator',
+    domain = 'ART',
     ip = '203.0.113.7',
   } = args;
 
   return db.query<{ token: string }>(
-    `select public.complete_session($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8,$9,$10::jsonb,$11,$12,$13) as token`,
+    `select public.complete_session(
+       $1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::int,$10::jsonb,$11::jsonb,$12::jsonb,$13::jsonb,$14,$15,$16
+     ) as token`,
     [
       emailEncrypted,
       emailIndex,
       name,
       language,
       shareToken,
+      archetype,
+      domain,
       JSON.stringify({ dim1: 72, dim2: 28, dim3: 81, dim4: 55 }),
-      JSON.stringify({
-        dim1: 'Conceptual Visionary',
-        dim2: 'Independent Operator',
-        dim3: 'Creative Pioneer',
-        dim4: 'Calculated Risk-Taker',
-      }),
-      'The Innovator',
-      'Innovation & Creativity',
-      JSON.stringify(answers),
+      88,
+      JSON.stringify({ colors: ['blu', 'verde'], shape: 'lightning', space: 'creative', stimulus: 'art' }),
+      JSON.stringify({ p1q01: ['o1'] }),
+      JSON.stringify({ p2q01: ['o3'] }),
+      JSON.stringify({ p1: { p1q01: 'note' }, p2: {} }),
       '2026-06-draft',
       'results_delivery',
       ip,
@@ -88,25 +87,42 @@ async function count(db: PGlite, table: string): Promise<number> {
 }
 
 describe('migrations', () => {
-  it('apply cleanly in order (0001 -> 0002 -> 0003)', async () => {
+  it('apply cleanly in order (0001 -> 0005)', async () => {
     await expect(migratedDb()).resolves.toBeTruthy();
   });
 });
 
-describe('complete_session', () => {
+describe('complete_session (v5)', () => {
   let db: PGlite;
   beforeEach(async () => {
     db = await migratedDb();
   });
 
-  it('writes one row across all five tables and returns the token', async () => {
+  it('writes one row across users/sessions/results/consents and returns the token', async () => {
     const res = await callComplete(db, { shareToken: 'tok_1', emailIndex: 'idx-1' });
     expect(res.rows[0].token).toBe('tok_1');
     expect(await count(db, 'users')).toBe(1);
     expect(await count(db, 'sessions')).toBe(1);
-    expect(await count(db, 'answers')).toBe(2);
     expect(await count(db, 'results')).toBe(1);
     expect(await count(db, 'consents')).toBe(1);
+  });
+
+  it('stores the archetype, domain, dims, congruence, and raw inputs', async () => {
+    await callComplete(db, { shareToken: 'tok_1', emailIndex: 'idx-1' });
+    const r = await db.query<{
+      archetype: string;
+      domain: string;
+      dim1_score: number;
+      congruence: number;
+      visual: { shape: string };
+      open_answers: { p1: Record<string, string> };
+    }>(`select archetype, domain, dim1_score, congruence, visual, open_answers from results`);
+    expect(r.rows[0].archetype).toBe('creator');
+    expect(r.rows[0].domain).toBe('ART');
+    expect(r.rows[0].dim1_score).toBe(72);
+    expect(r.rows[0].congruence).toBe(88);
+    expect(r.rows[0].visual.shape).toBe('lightning');
+    expect(r.rows[0].open_answers.p1.p1q01).toBe('note');
   });
 
   it('marks the session completed and stores the IP as inet', async () => {
@@ -135,27 +151,6 @@ describe('complete_session', () => {
       callComplete(db, { shareToken: 'dup', emailIndex: 'idx-2' }),
     ).rejects.toThrow(/unique|duplicate/i);
   });
-
-  it('extracts dimension, option, and score for each answer from the jsonb', async () => {
-    await callComplete(db, {
-      shareToken: 'tok_1',
-      emailIndex: 'idx-1',
-      answers: [
-        { question_id: 'Q005', dimension: 'DIM_2', selected_option: 'B', score: 1 },
-        { question_id: 'Q031', dimension: 'DIM_4', selected_option: 'C', score: 2 },
-      ],
-    });
-    const a = await db.query<{
-      question_id: string;
-      dimension: string;
-      selected_option: string;
-      score: number;
-    }>(`select question_id, dimension, selected_option, score from answers order by question_id`);
-    expect(a.rows).toEqual([
-      { question_id: 'Q005', dimension: 'DIM_2', selected_option: 'B', score: 1 },
-      { question_id: 'Q031', dimension: 'DIM_4', selected_option: 'C', score: 2 },
-    ]);
-  });
 });
 
 describe('get_shared_result (privacy contract)', () => {
@@ -172,11 +167,12 @@ describe('get_shared_result (privacy contract)', () => {
     );
     expect(r.rows).toHaveLength(1);
     const keys = Object.keys(r.rows[0]);
-    expect(keys).toContain('profile_title');
+    expect(keys).toContain('archetype');
+    expect(keys).toContain('congruence');
     expect(keys).toContain('language');
-    // No PII / answers / identifiers leak through the public path.
+    // No PII / identifiers leak through the public path.
     for (const k of keys) {
-      expect(k).not.toMatch(/email|answer|user|ip|consent|token/i);
+      expect(k).not.toMatch(/email|user|ip|consent|token|phase|open/i);
     }
   });
 
@@ -192,7 +188,7 @@ describe('get_shared_result (privacy contract)', () => {
   });
 });
 
-describe('admin_list_results', () => {
+describe('admin_list_results (v5)', () => {
   let db: PGlite;
   beforeEach(async () => {
     db = await migratedDb();
@@ -202,13 +198,13 @@ describe('admin_list_results', () => {
     await callComplete(db, { emailIndex: 'idx-a', shareToken: 'tok_a', emailEncrypted: 'ENC_A' });
     await callComplete(db, { emailIndex: 'idx-b', shareToken: 'tok_b', emailEncrypted: 'ENC_B' });
 
-    const r = await db.query<{ email_encrypted: string; share_token: string; profile_title: string }>(
-      `select email_encrypted, share_token, profile_title from public.admin_list_results(100)`,
+    const r = await db.query<{ email_encrypted: string; share_token: string; archetype: string }>(
+      `select email_encrypted, share_token, archetype from public.admin_list_results(100)`,
     );
     expect(r.rows).toHaveLength(2);
     // Emails are returned as ciphertext only (decryption happens in the app).
     expect(r.rows.map((x) => x.email_encrypted).sort()).toEqual(['ENC_A', 'ENC_B']);
-    expect(r.rows.every((x) => x.profile_title === 'The Innovator')).toBe(true);
+    expect(r.rows.every((x) => x.archetype === 'creator')).toBe(true);
   });
 
   it('is not executable by anon', async () => {
@@ -225,16 +221,16 @@ describe('RLS deny-by-default boundary', () => {
     await callComplete(db, { shareToken: 'share_me', emailIndex: 'idx-1' });
   });
 
-  it('anon cannot read answers or users', async () => {
+  it('anon cannot read results or users directly', async () => {
     await db.exec(`set role anon`);
-    await expect(db.query(`select * from answers`)).rejects.toThrow();
+    await expect(db.query(`select * from results`)).rejects.toThrow();
     await expect(db.query(`select * from users`)).rejects.toThrow();
     await db.exec(`reset role`);
   });
 
   it('anon CAN read a shared result via the SECURITY DEFINER function', async () => {
     await db.exec(`set role anon`);
-    const r = await db.query(`select profile_title from public.get_shared_result($1)`, ['share_me']);
+    const r = await db.query(`select archetype from public.get_shared_result($1)`, ['share_me']);
     expect(r.rows).toHaveLength(1);
     await db.exec(`reset role`);
   });

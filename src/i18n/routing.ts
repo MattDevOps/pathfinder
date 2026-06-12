@@ -1,13 +1,13 @@
 import { defineRouting } from 'next-intl/routing';
 
-// Supported locales. Hebrew is RTL; English is LTR.
-export const locales = ['en', 'he'] as const;
+// Supported locales. Italian is the primary market (v5); Hebrew is RTL.
+export const locales = ['it', 'en', 'he'] as const;
 export type Locale = (typeof locales)[number];
 
 export const routing = defineRouting({
   locales,
-  defaultLocale: 'en',
-  // Always show the locale prefix (/en, /he) so language + direction are
+  defaultLocale: 'it',
+  // Always show the locale prefix (/it, /en, /he) so language + direction are
   // unambiguous on first server render. RTL must be correct from day 1.
   localePrefix: 'always',
 });

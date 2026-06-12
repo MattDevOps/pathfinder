@@ -14,12 +14,13 @@ interface RawRow {
   email_encrypted: string;
   name: string | null;
   language: string;
-  profile_title: string;
-  sector_cluster: string;
+  archetype: string;
+  domain: string;
   dim1_score: number;
   dim2_score: number;
   dim3_score: number;
   dim4_score: number;
+  congruence: number;
   share_token: string;
   created_at: string;
 }
@@ -43,12 +44,13 @@ export async function fetchResults(limit = 1000): Promise<AdminResultRow[]> {
     email: safeDecrypt(row.email_encrypted),
     name: row.name,
     language: row.language,
-    profile_title: row.profile_title,
-    sector_cluster: row.sector_cluster,
+    archetype: row.archetype,
+    domain: row.domain,
     dim1_score: row.dim1_score,
     dim2_score: row.dim2_score,
     dim3_score: row.dim3_score,
     dim4_score: row.dim4_score,
+    congruence: row.congruence,
     created_at: row.created_at,
     share_token: row.share_token,
   }));

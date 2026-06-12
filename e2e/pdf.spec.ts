@@ -5,13 +5,18 @@ import { test, expect } from '@playwright/test';
 // valid PDF. Deep Hebrew-glyph extraction from the compressed PDF stream is out
 // of scope here; the HE *route* rendering Hebrew is asserted in results.spec.ts,
 // and the same route is what Chromium prints.
-const DIMS = 'd1=67&d2=63&d3=67&d4=67';
+// Serial: each test launches its own Chromium to print; running them in
+// parallel races the route's first-hit compile + two cold starts and can time
+// out (passes fine one at a time).
+test.describe.configure({ mode: 'serial' });
+
+const RESULT = 'a=builder&dom=TEC&d1=67&d2=63&d3=67&d4=67&c=80';
 
 for (const locale of ['en', 'he'] as const) {
   test(`${locale} PDF route returns a valid PDF`, async ({ request }) => {
     test.slow(); // first hit compiles the route + launches Chromium
 
-    const res = await request.get(`/${locale}/results/pdf?${DIMS}`);
+    const res = await request.get(`/${locale}/results/pdf?${RESULT}`);
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toContain('application/pdf');
 

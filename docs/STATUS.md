@@ -6,7 +6,61 @@ resolves, or scope changes. Companion docs: [`PLAN.md`](PLAN.md) (the build plan
 and [`FOUNDER-QUESTIONS.md`](FOUNDER-QUESTIONS.md) (decisions that gate the
 results engine).
 
-**Last updated:** 2026-06-08
+**Last updated:** 2026-06-12
+
+---
+
+## ⚠️ v5 pivot in progress (2026-06-12)
+
+Rafi delivered **pathfinder v5** (a full redesign, kept as
+[`pathfinder-v5-reference.html`](pathfinder-v5-reference.html)). It replaces the
+single 40-question quiz with a **3-phase funnel** and a new results engine:
+
+- **Phase 0** — visual profiling (3 colors ranked, primary/secondary shape,
+  workspace, instinct image). Biases archetype + domain.
+- **Phase 1** — 15 personality questions (multi-select, neutral opt-out) → 4
+  dimensions → one of **4 archetypes** (Builder / Specialist / Creator / Connector).
+- **Phase 2** — 12 passion questions → one of **12 domains**.
+- **Result** — archetype × domain → one of **48 buckets**, each 4 concrete career
+  paths + first step + a congruence %.
+
+Language: **Italian is now primary**; EN/HE retained as locales (content
+translation is tracked debt). This supersedes most of the old "blocked on the
+founder" list — v5 *is* the resolved content, just in a new shape.
+
+**Port complete (all six stages landed; legacy engine removed).**
+
+- [x] Data layer — `src/data/{phase0,personality,passions,careers}.ts`, generated
+  from the prototype by `scripts/gen-v5-data.mjs` (Italian authored, en/he empty).
+  v5 types in `src/lib/types.ts`. Integrity test `src/data/v5-content.test.ts`.
+- [x] Scoring engine — `src/lib/archetype.ts` (calcDimensions / calcArchetype /
+  calcDomain / congruence), faithful port, unit-tested in `archetype.test.ts`.
+- [x] Persistence — v5 `quiz-session.ts`, `contract.ts`, `completeSession`,
+  `results-record.ts`, `profile.ts` view model, migration `0005_v5.sql`
+  (archetype/domain/dims/congruence + jsonb visual/answers; refreshed
+  complete_session / get_shared_result / admin_list_results), admin CSV. The
+  pglite integration test exercises the 0001→0005 chain.
+- [x] Quiz UI — `Quiz.tsx` rebuilt as Phase 0 (visual) / Phase 1 / interstitial /
+  Phase 2 / gate, with localStorage resume and a stable per-question option order.
+- [x] Results — `ResultsView.tsx` (archetype × domain, congruence, visual
+  signature, 4 career paths, philosophy), preview + share-token pages, both PDF
+  routes.
+- [x] i18n — `it` locale added (Italian default); `messages/{it,en,he}.json` for
+  the v5 chrome. e2e (`funnel`/`results`/`pdf`) rewritten for the 3-phase flow.
+
+**Checks:** `npm run lint` green (the old pre-existing error is resolved),
+`npm run typecheck` green, `npm test` 70 green, `npm run build` green, Playwright
+chromium suite green (full funnel + results EN + HE/RTL + both PDF routes).
+
+**Remaining content/translation debt (not blocking the build):**
+
+- EN/HE translation of all v5 content (questions, options, careers, archetype
+  copy) — Italian is authoritative; en/he fall back to Italian and are tracked
+  by `v5-content.test.ts`. Hand-edit the generated `src/data/*.ts`, do not
+  regenerate over them.
+- Visual design is functional (Tailwind theme), not yet pixel-matched to the v5
+  prototype's navy/gold treatment — a polish pass (e.g. `/design-review`).
+- Hosted-Supabase wiring still unverified end to end (no live project/secrets).
 
 ---
 
@@ -15,10 +69,10 @@ results engine).
 | Check | Command | State |
 |---|---|---|
 | Types | `npm run typecheck` | green |
-| Unit + DB integration | `npm test` (vitest, 84 tests) | green |
-| E2E | `npm run test:e2e` (Playwright, 43 tests on CI) | green |
+| Unit + DB integration | `npm test` (vitest, 70 tests) | green |
+| E2E | `npm run test:e2e` (Playwright, v5 funnel/results/pdf) | green (chromium) |
 | Build | `npm run build` | green |
-| Lint | `npm run lint` | 1 pre-existing error (see Known issues) |
+| Lint | `npm run lint` | green |
 
 CI (`.github/workflows/ci.yml`): `verify` job (typecheck + unit/DB + build) and
 `e2e` job (Playwright matrix). Both gate every push and PR.
