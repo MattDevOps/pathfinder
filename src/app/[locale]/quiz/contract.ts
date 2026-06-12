@@ -1,11 +1,16 @@
-import type { Selections } from '@/lib/quiz-session';
+import type { VisualProfile, Selections } from '@/lib/archetype';
 
 // Shared types for the completeSession server action. Kept out of actions.ts
 // because a 'use server' module may only export async functions — exporting a
 // type or const from it strips ALL of the module's exports.
 
 export interface CompleteSessionInput {
-  selections: Selections;
+  visual: VisualProfile;
+  phase1: Selections;
+  phase2: Selections;
+  /** Optional "anything to add?" free text, keyed by question id. */
+  openP1?: Record<string, string>;
+  openP2?: Record<string, string>;
   email: string;
   name?: string;
   language: string;

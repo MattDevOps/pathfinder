@@ -2,42 +2,39 @@ import { test, expect } from '@playwright/test';
 import { HEBREW_RE } from './helpers';
 
 // Results render straight off the query-param preview URL, so these run fast
-// without walking the quiz. Same dims used in the manual dogfood.
-const DIMS = 'd1=67&d2=63&d3=67&d4=67';
+// without walking the funnel. archetype x domain + dims + congruence.
+const RESULT = 'a=builder&dom=TEC&d1=72&d2=28&d3=81&d4=66&c=88';
 
 test.describe('results page (EN)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(`/en/results?${DIMS}`);
+    await page.goto(`/en/results?${RESULT}`);
   });
 
-  test('renders the profile, dimensions, and three paths', async ({ page }) => {
+  test('renders the archetype x domain, dimensions, and career paths', async ({
+    page,
+  }) => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 
-    // Draft banner is present (content is provisional pending sign-off).
-    await expect(
-      page.getByText(/Draft preview: scoring and scenario content/),
-    ).toBeVisible();
-
-    // Profile title + sector.
-    await expect(
-      page.getByRole('heading', { name: 'The Innovator' }),
-    ).toBeVisible();
-    await expect(page.getByText('Innovation & Creativity')).toBeVisible();
-
-    // All four dimension labels.
+    // All four dimension axis labels (English chrome).
     for (const label of [
-      'Thinking style',
-      'Work style',
-      'Creative drive',
-      'Risk appetite',
+      'Way of thinking',
+      'Social mode',
+      'Source of energy',
+      'Risk tolerance',
     ]) {
       await expect(page.getByText(label, { exact: true })).toBeVisible();
     }
 
-    // Three scenario cards.
-    for (const s of ['Founder', 'Freelancer', 'Employee']) {
-      await expect(page.getByRole('heading', { name: s })).toBeVisible();
-    }
+    // Career section + philosophy block.
+    await expect(
+      page.getByRole('heading', { name: 'Your specific paths' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: "Potential doesn't depend on the path" }),
+    ).toBeVisible();
+
+    // Four congruence badges (one per path).
+    await expect(page.getByText(/% congruence/).first()).toBeVisible();
   });
 
   test('exposes the PDF and share actions', async ({ page }) => {
@@ -51,21 +48,13 @@ test.describe('results page (EN)', () => {
 });
 
 test.describe('results page (HE / RTL)', () => {
-  test('is right-to-left and renders Hebrew, keeping the English title', async ({
-    page,
-  }) => {
-    await page.goto(`/he/results?${DIMS}`);
+  test('is right-to-left and renders Hebrew chrome', async ({ page }) => {
+    await page.goto(`/he/results?${RESULT}`);
 
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
 
     // The page body contains real Hebrew glyphs (not tofu/fallback).
     const body = await page.locator('body').innerText();
     expect(body).toMatch(HEBREW_RE);
-
-    // Profile title stays English even in the HE layout (it is not yet
-    // localized — draft).
-    await expect(
-      page.getByRole('heading', { name: 'The Innovator' }),
-    ).toBeVisible();
   });
 });

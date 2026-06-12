@@ -12,7 +12,7 @@ import { renderUrlToPdf } from '@/lib/pdf';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Chromium cold start + render
 
-const SCORE_KEYS = ['d1', 'd2', 'd3', 'd4'] as const;
+const PREVIEW_KEYS = ['a', 'dom', 'd1', 'd2', 'd3', 'd4', 'c'] as const;
 
 export async function GET(
   req: NextRequest,
@@ -25,7 +25,7 @@ export async function GET(
 
   const incoming = req.nextUrl.searchParams;
   const query = new URLSearchParams();
-  for (const key of SCORE_KEYS) {
+  for (const key of PREVIEW_KEYS) {
     const value = incoming.get(key);
     if (value !== null) query.set(key, value);
   }

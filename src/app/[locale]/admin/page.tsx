@@ -64,9 +64,10 @@ export default async function AdminPage({
                 <th className="px-3 py-2 text-start font-medium">Email</th>
                 <th className="px-3 py-2 text-start font-medium">Name</th>
                 <th className="px-3 py-2 text-start font-medium">Lang</th>
-                <th className="px-3 py-2 text-start font-medium">Profile</th>
-                <th className="px-3 py-2 text-start font-medium">Sector</th>
+                <th className="px-3 py-2 text-start font-medium">Archetype</th>
+                <th className="px-3 py-2 text-start font-medium">Domain</th>
                 <th className="px-3 py-2 text-start font-medium">D1/D2/D3/D4</th>
+                <th className="px-3 py-2 text-start font-medium">Congr.</th>
                 <th className="px-3 py-2 text-start font-medium">Created</th>
               </tr>
             </thead>
@@ -76,11 +77,12 @@ export default async function AdminPage({
                   <td className="px-3 py-2">{r.email}</td>
                   <td className="px-3 py-2">{r.name ?? ''}</td>
                   <td className="px-3 py-2">{r.language}</td>
-                  <td className="px-3 py-2">{r.profile_title}</td>
-                  <td className="px-3 py-2">{r.sector_cluster}</td>
+                  <td className="px-3 py-2">{r.archetype}</td>
+                  <td className="px-3 py-2">{r.domain}</td>
                   <td className="px-3 py-2 tabular-nums">
                     {r.dim1_score}/{r.dim2_score}/{r.dim3_score}/{r.dim4_score}
                   </td>
+                  <td className="px-3 py-2 tabular-nums">{r.congruence}</td>
                   <td className="px-3 py-2 tabular-nums">
                     {r.created_at?.slice(0, 10)}
                   </td>

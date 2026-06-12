@@ -1,83 +1,131 @@
-import type { Dimension, DimensionScores, Band, SectorCluster, ScenarioStrength } from './types';
-import { DIMENSIONS } from './types';
-import { bandOf, labelFor } from './scoring';
-import { assignSectorCluster, generateScenarios, profileTitle } from './scenarios.draft';
-import {
-  scenarioContent,
-  type ScenarioContent,
-  type ScenarioKey,
-} from '@/data/scenario-content.draft';
-import type { Locale } from '@/i18n/routing';
+import type { ArchetypeId, DomainId, Band } from './types';
+import type { Dimensions, VisualProfile } from './archetype';
+import { careersFor, careerCongruence } from './archetype';
+import { ARCHETYPES, DOMAIN_NAMES } from '@/data/careers';
+import { P0_COLORS, P0_SHAPES, P0_SPACES, P0_STIMULI } from '@/data/phase0';
+import { t } from './localized';
 
-// Pure assembly: combine the CONFIRMED scoring engine with the DRAFT
-// scenario/sector/content layer into a single view model the results UI can
-// render directly. Framework-free so it stays unit-testable. Locale is only
-// used to select content strings; all display chrome (dimension names,
-// scenario path labels, strength words) is the UI's job via next-intl.
-//
-// NOTE: everything downstream of the scores here is DRAFT (see PLAN.md B1-B5
-// and scenario-content.draft.ts) and will change after founder sign-off.
+// Pure assembly of the v5 results view model: combine the stored, server-scored
+// result (archetype, domain, dims, congruence) with the Phase 0 visual picks and
+// the localized content, producing exactly what the results UI renders. Content
+// strings are resolved for `locale` (falling back to Italian). Display chrome
+// that isn't content — dimension axis names, band words — stays the UI's job via
+// next-intl, so this returns the structural `dimKey`/`band` instead of words.
 
 export interface DimensionView {
-  dimension: Dimension; // 'DIM_1'..'DIM_4'
+  key: 'd1' | 'd2' | 'd3' | 'd4';
   score: number; // 0-100
-  band: Band;
-  label: string; // CONFIRMED band label from scoring.ts
+  band: Band; // low <40, high >65, else mid (v5 thresholds)
 }
 
-export interface ScenarioView {
-  key: ScenarioKey; // 'employee' | 'freelancer' | 'founder'
-  strength: ScenarioStrength; // 'high' | 'medium' | 'low'
-  content: ScenarioContent; // DRAFT copy (may have empty HE strings)
+export interface CareerView {
+  name: string;
+  desc: string;
+  firstStep: string;
+  congruence: number;
+  best: boolean;
 }
 
-export interface ProfileResult {
-  title: string; // DRAFT profile title, e.g. "The Strategist"
-  cluster: SectorCluster;
+/** Which signals (archetype / domain) the Phase 0 visual picks agree with. */
+export type AlignmentNote = 'both' | 'arch' | 'dom' | 'none';
+
+export interface VisualSignature {
+  colorDescs: string[];
+  shapeName: string | null;
+  shapeDesc: string | null;
+  archAlign: boolean;
+  domAlign: boolean;
+  note: AlignmentNote;
+}
+
+export interface ProfileView {
+  archetype: { id: ArchetypeId; icon: string; name: string; sub: string };
+  domain: DomainId;
+  domainName: string;
+  congruence: number;
   dimensions: DimensionView[];
-  scenarios: ScenarioView[]; // sorted strongest-first
+  careers: CareerView[];
+  visual: VisualSignature;
 }
 
-const STRENGTH_RANK: Record<ScenarioStrength, number> = {
-  high: 0,
-  medium: 1,
-  low: 2,
-};
+// v5 band thresholds (showP1Result): <40 low, >65 high, else mid.
+function bandOf(score: number): Band {
+  if (score < 40) return 'low';
+  if (score > 65) return 'high';
+  return 'mid';
+}
 
-const SCENARIO_KEYS: ScenarioKey[] = ['employee', 'freelancer', 'founder'];
+/** Phase 0 -> domain vote (space x2, stimulus x1); null if no hints. */
+function visualDomainHint(visual: VisualProfile): DomainId | null {
+  const votes = new Map<DomainId, number>();
+  const add = (d: DomainId | null, n: number) => {
+    if (d) votes.set(d, (votes.get(d) ?? 0) + n);
+  };
+  add(P0_SPACES.find((s) => s.id === visual.space)?.domHint ?? null, 2);
+  add(P0_STIMULI.find((s) => s.id === visual.stimulus)?.domHint ?? null, 1);
+  let best: DomainId | null = null;
+  let bestN = 0;
+  for (const [d, n] of votes) {
+    if (n > bestN) {
+      best = d;
+      bestN = n;
+    }
+  }
+  return best;
+}
 
 export function buildProfile(
-  scores: DimensionScores,
-  locale: Locale,
-): ProfileResult {
-  const cluster = assignSectorCluster(scores);
-  const strengths = generateScenarios(scores);
+  result: { archetype: ArchetypeId; domain: DomainId; dims: Dimensions; congruence: number },
+  visual: VisualProfile,
+  locale: string,
+): ProfileView {
+  const arch = ARCHETYPES.find((a) => a.id === result.archetype)!;
 
-  const dimensions: DimensionView[] = DIMENSIONS.map((dimension) => {
-    const score = scores[dimensionKey(dimension)];
-    return {
-      dimension,
-      score,
-      band: bandOf(score),
-      label: labelFor(dimension, score),
-    };
-  });
-
-  const scenarios: ScenarioView[] = SCENARIO_KEYS.map((key) => ({
+  const dimensions: DimensionView[] = (['d1', 'd2', 'd3', 'd4'] as const).map((key) => ({
     key,
-    strength: strengths[key],
-    content: scenarioContent(locale, cluster, key),
-  })).sort((a, b) => STRENGTH_RANK[a.strength] - STRENGTH_RANK[b.strength]);
+    score: result.dims[key],
+    band: bandOf(result.dims[key]),
+  }));
+
+  const careers: CareerView[] = careersFor(result.archetype, result.domain).map((c, i) => ({
+    name: t(c.name, locale),
+    desc: t(c.desc, locale),
+    firstStep: t(c.firstStep, locale),
+    congruence: careerCongruence(result.congruence, i),
+    best: i === 0,
+  }));
+
+  // Visual signature: first two colours' descriptors + primary shape.
+  const colorDescs = visual.colors
+    .slice(0, 2)
+    .map((id) => P0_COLORS.find((c) => c.id === id))
+    .filter((c): c is NonNullable<typeof c> => !!c)
+    .map((c) => t(c.desc, locale));
+  const shape = P0_SHAPES.find((s) => s.id === visual.shape) ?? null;
+  const archAlign = !!shape?.archBias && shape.archBias === result.archetype;
+  const domAlign = visualDomainHint(visual) === result.domain;
+  const note: AlignmentNote =
+    archAlign && domAlign ? 'both' : archAlign ? 'arch' : domAlign ? 'dom' : 'none';
 
   return {
-    title: profileTitle(cluster),
-    cluster,
+    archetype: {
+      id: arch.id,
+      icon: arch.icon,
+      name: t(arch.name, locale),
+      sub: t(arch.sub, locale),
+    },
+    domain: result.domain,
+    domainName: t(DOMAIN_NAMES[result.domain], locale),
+    congruence: result.congruence,
     dimensions,
-    scenarios,
+    careers,
+    visual: {
+      colorDescs,
+      shapeName: shape ? t(shape.name, locale) : null,
+      shapeDesc: shape ? t(shape.desc, locale) : null,
+      archAlign,
+      domAlign,
+      note,
+    },
   };
-}
-
-// Map the 'DIM_1' enum to the lowercase 'dim1' key used by DimensionScores.
-function dimensionKey(d: Dimension): keyof DimensionScores {
-  return d.toLowerCase().replace('_', '') as keyof DimensionScores;
 }

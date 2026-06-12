@@ -57,13 +57,14 @@ describe('buildResultsCsv', () => {
   const rec: ResultExportRecord = {
     email: 'alice@example.com',
     name: 'Alice',
-    language: 'en',
-    profile_title: 'The Innovator',
-    sector_cluster: 'Innovation & Creativity',
+    language: 'it',
+    archetype: 'creator',
+    domain: 'ART',
     dim1_score: 72,
     dim2_score: 28,
     dim3_score: 81,
     dim4_score: 55,
+    congruence: 88,
     created_at: '2026-06-08T00:00:00Z',
   };
 
@@ -71,11 +72,11 @@ describe('buildResultsCsv', () => {
     const csv = buildResultsCsv([rec]);
     const lines = csv.split('\r\n');
     expect(lines[0]).toBe(
-      'email,name,language,profile_title,sector_cluster,dim1_score,dim2_score,dim3_score,dim4_score,created_at',
+      'email,name,language,archetype,domain,dim1_score,dim2_score,dim3_score,dim4_score,congruence,created_at',
     );
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain('alice@example.com');
-    expect(lines[1]).toContain('The Innovator');
+    expect(lines[1]).toContain('creator');
   });
 
   it('sanitizes a malicious name against formula injection', () => {
@@ -85,6 +86,6 @@ describe('buildResultsCsv', () => {
 
   it('handles a null name', () => {
     const csv = buildResultsCsv([{ ...rec, name: null }]);
-    expect(csv.split('\r\n')[1]).toContain('alice@example.com,,en,');
+    expect(csv.split('\r\n')[1]).toContain('alice@example.com,,it,');
   });
 });

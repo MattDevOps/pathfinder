@@ -1,28 +1,65 @@
 {
   "Landing": {
-    "hero": "Find your direction",
-    "subhead": "Answer a few questions and discover how you fit as an Employee, Freelancer, or Founder.",
-    "cta": "Start the quiz",
-    "howItWorks": "How it works",
-    "langToggle": "עברית"
+    "tagline": "Discover who you are. Then what you love. Then where to go.",
+    "phase0Title": "Visual profile",
+    "phase0Desc": "Colors, shapes and spaces — your instinctive reactions reveal what words hide",
+    "phase1Title": "Who you are",
+    "phase1Desc": "15 questions about your character, thinking and values",
+    "phase2Title": "What you love",
+    "phase2Desc": "12 questions about your passions and your world",
+    "resultTitle": "Your path",
+    "resultDesc": "Concrete, specific routes tailored to you",
+    "phaseLabel": "Phase {n}",
+    "resultLabel": "Result",
+    "cta": "Start",
+    "meta": "Free · ~18 minutes · No sign-up"
   },
   "Common": {
     "appName": "Pathfinder",
     "next": "Next",
     "back": "Back",
+    "continue": "Continue",
     "loading": "Analyzing your profile..."
   },
   "Quiz": {
-    "progress": "Question {current} of {total}",
-    "selectHint": "Pick the option that fits you best. Use keys 1-4 or click.",
-    "back": "Back",
+    "preparing": "Preparing your quiz...",
     "restart": "Start over",
-    "submit": "See my result",
-    "preparing": "Preparing your quiz..."
+    "next": "Next",
+    "back": "Back",
+    "continue": "Continue",
+    "p0StepLabel": "Phase 0 · Step {step} of 4",
+    "p0ColorsTitle": "Pick the 3 colors that draw you in the most",
+    "p0ColorsSub": "Follow your instinct — don't overthink it. The order you pick them in matters.",
+    "p0ColorsHint": "Select 3 colors in your preferred order",
+    "p0ShapesTitle": "Which shape represents you most?",
+    "p0ShapesSub": "Pick the main one — then add a second if you feel between two.",
+    "p0ShapesHint": "Select a shape",
+    "p0ShapesSecond": "Click a second shape (optional)",
+    "p0SpacesTitle": "Where would you want to spend your working days?",
+    "p0SpacesSub": "Where you feel most alive and productive — not where you think you should be.",
+    "p0SpacesHint": "Select a space",
+    "p0StimTitle": "Which of these images grabs you most?",
+    "p0StimSub": "Answer in under 3 seconds — your first reaction is the true one.",
+    "p0StimHint": "Select an image",
+    "procTitle": "Reading your visual profile",
+    "procSub": "Every choice says something about you — even the one that seems irrational.",
+    "p1PhaseLabel": "Phase 1 — Who you are",
+    "p2PhaseLabel": "Phase 2 — What you love",
+    "questionProgress": "Question {current} of {total}",
+    "multiHint": "You can choose one or more answers",
+    "openLabel": "Want to add something?",
+    "openOptional": "(optional)",
+    "openPlaceholder": "Specify or expand...",
+    "selectedOne": "1 answer selected",
+    "selectedMany": "{count} answers selected",
+    "p1ResultLead": "Your profile — Phase 1",
+    "p1ResultCtaTitle": "Now let's find which world you're at home in",
+    "p1ResultCtaBody": "Phase 2 dives into your passions, hobbies and what you truly love — to find the specific field where your profile reaches its full potential.",
+    "p1ResultCtaButton": "Continue to Phase 2"
   },
   "Gate": {
     "lead": "Your profile is ready",
-    "teaser": "You came out as {title}. Enter your email to unlock your full profile and three career paths.",
+    "teaser": "You came out as {title}. Enter your email to unlock your full profile and your paths.",
     "nameLabel": "First name (optional)",
     "namePlaceholder": "Your name",
     "emailLabel": "Email",
@@ -39,35 +76,39 @@
     "errorServer": "Something went wrong saving your profile. Please try again."
   },
   "Results": {
-    "draftBanner": "Draft preview: scoring and scenario content are provisional, pending sign-off.",
-    "profileLead": "Your profile",
-    "sectorLabel": "Sector",
+    "combo": "{icon} in the world of {domain}",
+    "sub": "These are the concrete, specific paths where your profile reaches its full potential. None is more or less valid — it all depends on how congruent it is with who you are.",
+    "congruenceSuffix": "% congruence",
     "dimensionsHeading": "How you're wired",
-    "scenariosHeading": "Your three paths",
-    "rolesLabel": "Example roles",
-    "nextStepsLabel": "Next steps",
-    "translationPending": "Translation pending",
-    "strength": {
-      "high": "Strong fit",
-      "medium": "Possible fit",
-      "low": "Stretch"
+    "visualLabel": "Your visual signature",
+    "careersHeading": "Your specific paths",
+    "firstStep": "First step →",
+    "balanced": "Balanced",
+    "dimAxis": {
+      "d1": "Way of thinking",
+      "d2": "Social mode",
+      "d3": "Source of energy",
+      "d4": "Risk tolerance"
     },
-    "scenario": {
-      "employee": "Employee",
-      "freelancer": "Freelancer",
-      "founder": "Founder"
+    "dimWord": {
+      "d1": { "low": "Practical", "high": "Visionary" },
+      "d2": { "low": "Independent", "high": "Collaborative" },
+      "d3": { "low": "Systematic", "high": "Creative" },
+      "d4": { "low": "Stability", "high": "Autonomy" }
     },
-    "dimension": {
-      "DIM_1": "Thinking style",
-      "DIM_2": "Work style",
-      "DIM_3": "Creative drive",
-      "DIM_4": "Risk appetite"
+    "align": {
+      "both": "Your visual choices align with your text profile on both dimensions — archetype and domain. This reinforces the overall reading.",
+      "arch": "Your visual choices confirm your archetype. Your passion domain may still evolve — explore more worlds before deciding.",
+      "dom": "Your visual choices confirm the domain. Your operating style may have further nuances beyond the text profile.",
+      "none": "Your visual and text choices diverge slightly. This is normal for complex or transitioning profiles — there's no \"correct\" reading."
     },
+    "philoTitle": "Potential doesn't depend on the path",
+    "philoBody": "You won't find stars or ratings on these paths. The congruence percentage you see is the only metric that matters. A florist at 94% congruence builds an empire. A lawyer at 41% just survives. IKEA started by selling matches. The path doesn't decide the outcome — you do.",
+    "restart": "Start over",
     "cta": {
       "pdf": "Download as PDF",
       "share": "Share your result",
-      "copied": "Link copied",
-      "email": "Email me my full profile"
+      "copied": "Link copied"
     }
   }
 }
